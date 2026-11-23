@@ -184,21 +184,32 @@ async function run(name, fn, browser) {
         await page.route('**/fapi/v1/**', route => {
             const u = new URL(route.request().url());
             const tk = (symbol, q) => ({ symbol, lastPrice: '100', priceChangePercent: '1.5', quoteVolume: String(q) });
-            const body = u.pathname.endsWith('/ticker/24hr')
-                ? [tk('BTCUSDT', 9e9), tk('ETHUSDT', 5e9), tk('1000PEPEUSDT', 1e9), tk('SOLUSDT_250101', 9e10)]
+            const info = (symbol, type) => ({ symbol, status: 'TRADING', contractType: type === 'COIN' ? 'PERPETUAL' : 'TRADIFI_PERPETUAL', underlyingType: type });
+            const body = u.pathname.endsWith('/exchangeInfo')
+                ? { symbols: [info('BTCUSDT', 'COIN'), info('ETHUSDT', 'COIN'), info('1000PEPEUSDT', 'COIN'), info('NVDAUSDT', 'EQUITY')] }
+                : u.pathname.endsWith('/ticker/24hr')
+                ? [tk('BTCUSDT', 9e9), tk('ETHUSDT', 5e9), tk('NVDAUSDT', 4e9), tk('1000PEPEUSDT', 1e9), tk('SOLUSDT_250101', 9e10)]
                 : fk(u.searchParams.get('symbol') === 'ETHUSDT' ? 9000 : 1000);
             return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
         });
         await page.route('**/api/v3/**', r => r.abort());
         await page.goto(PAGE); await page.waitForTimeout(500);
-        await page.evaluate(() => { window.__sockets[0].onopen(); window.liveFeed.tick(); });
+        // сокет відкрито й пішли перші дані (порожній масив markPrice) → «Наживо»
+        await page.evaluate(() => {
+            const ws = window.__sockets[0];
+            ws.onopen();
+            ws.onmessage({ data: JSON.stringify({ stream: '!markPrice@arr@1s', data: [] }) });
+            window.liveFeed.tick();
+        });
     }
 
     await run('live tab is the default and renders metrics from feed data', async page => {
         await liveSetup(page);
         assert.equal(await page.$eval('#view-live', e => e.classList.contains('hidden')), false);
         assert.equal(await page.$eval('#view-terminal', e => e.classList.contains('hidden')), true);
-        assert.equal((await page.$$('#lvBody tr[data-sym]')).length, 3);                 // без SOLUSDT_250101
+        assert.equal((await page.$$('#lvBody tr[data-sym]')).length, 3);                 // без SOLUSDT_250101 і без акції NVDA
+        assert.equal(await page.$('#lvBody tr[data-sym="NVDAUSDT"]'), null);
+        assert.ok(String(await page.evaluate(() => window.__sockets[0].url)).includes('/market/stream?streams='));
         assert.equal(await page.textContent('#lvStatus'), 'Наживо');
         const eth = await page.$eval('#lvBody tr[data-sym="ETHUSDT"]', tr => tr.textContent.replace(/\s+/g, ' '));
         assert.match(eth, /×\d/);                                                       // сплеск обсягу порахований
@@ -269,6 +280,24 @@ async function run(name, fn, browser) {
         assert.match(msg, /VPN/);
         assert.equal(await page.$eval('#lvDetail', e => e.hidden), false);
         assert.match(await page.textContent('#lvBody'), /HTTP 451/);
+    }, browser);
+
+
+    await run('live tab: «Лише крипто» toggle restarts the feed, shows TradFi and is remembered', async page => {
+        await liveSetup(page);
+        assert.equal(await page.isChecked('#lvCryptoOnly'), true);
+        await page.uncheck('#lvCryptoOnly');
+        await page.waitForTimeout(600);
+        await page.evaluate(() => {
+            const ws = window.__sockets[window.__sockets.length - 1];
+            ws.onopen();
+            ws.onmessage({ data: JSON.stringify({ stream: '!markPrice@arr@1s', data: [] }) });
+            window.liveFeed.tick();
+        });
+        assert.equal(await page.evaluate(() => window.__sockets.length), 2);                 // старий сокет закрито, відкрито новий
+        assert.notEqual(await page.$('#lvBody tr[data-sym="NVDAUSDT"]'), null);
+        await page.reload(); await page.waitForTimeout(300);
+        assert.equal(await page.isChecked('#lvCryptoOnly'), false);
     }, browser);
 
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)

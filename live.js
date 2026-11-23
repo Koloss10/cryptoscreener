@@ -19,7 +19,7 @@
         { key: 'vol24', label: 'Обсяг 24г', fmt: usd }
     ];
 
-    const state = { rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, status: 'connecting', detail: '' };
+    const state = { rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, cryptoOnly: true, notice: '', status: 'connecting', detail: '' };
 
     function pct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
     function usd(v) { return '$' + window.fmtK(v); }
@@ -32,13 +32,14 @@
             const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
             if (saved && typeof saved === 'object') {
                 Object.assign(state.filters, saved.filters || {});
+                if (typeof saved.cryptoOnly === 'boolean') state.cryptoOnly = saved.cryptoOnly;
                 if (COLUMNS.some(c => c.key === saved.sortKey)) state.sortKey = saved.sortKey;
                 if (saved.sortDir === 'asc' || saved.sortDir === 'desc') state.sortDir = saved.sortDir;
             }
         } catch (e) { /* сховище недоступне або пошкоджене — працюємо зі значеннями за замовчуванням */ }
     }
     function save() {
-        try { localStorage.setItem(STORE_KEY, JSON.stringify({ filters: state.filters, sortKey: state.sortKey, sortDir: state.sortDir })); }
+        try { localStorage.setItem(STORE_KEY, JSON.stringify({ filters: state.filters, cryptoOnly: state.cryptoOnly, sortKey: state.sortKey, sortDir: state.sortDir })); }
         catch (e) { /* приватний режим: налаштування не збережуться, це не критично */ }
     }
 
@@ -70,8 +71,9 @@
         chip.textContent = STATUS_TEXT[state.status] || state.status;
         chip.dataset.s = state.status;
         const detail = document.getElementById('lvDetail');
-        detail.hidden = !(state.detail && state.status !== 'live');
-        detail.textContent = detail.hidden ? '' : failureText();
+        const failing = state.detail && state.status !== 'live';
+        detail.hidden = !(failing || state.notice);
+        detail.textContent = failing ? failureText() : state.notice;
         document.getElementById('lvCount').textContent = `${rows.length} з ${state.rows.length} монет`;
     }
 
@@ -106,21 +108,32 @@
         }
     }
 
-    function start() {
-        load();
-        bind();
+    function startFeed() {
+        if (window.liveFeed) window.liveFeed.stop();
+        state.rows = []; state.status = 'connecting'; state.detail = ''; state.notice = '';
         const feed = window.Feed.createFeed({
             Metrics: window.Metrics,
             fetchImpl: (u, o) => fetch(u, o),
             WebSocketImpl: window.WebSocket,
             now: () => Date.now(),
+            includeTradfi: !state.cryptoOnly,
             onRows: rows => { state.rows = rows; render(); },
-            onStatus: (s, detail) => { state.status = s; state.detail = s === 'live' ? '' : (detail || state.detail); render(); }
+            onStatus: (s, detail) => { state.status = s; state.detail = s === 'live' ? '' : (detail || state.detail); render(); },
+            onNotice: msg => { state.notice = msg; render(); }
         });
         window.liveFeed = feed;
-        window.renderLive = render;      // викликається при відкритті вкладки
         feed.start();
         render();
+    }
+
+    function start() {
+        load();
+        bind();
+        const crypto = document.getElementById('lvCryptoOnly');
+        crypto.checked = state.cryptoOnly;
+        crypto.addEventListener('change', () => { state.cryptoOnly = crypto.checked; save(); startFeed(); });
+        window.renderLive = render;      // викликається при відкритті вкладки
+        startFeed();
     }
 
     window.addEventListener('DOMContentLoaded', start);

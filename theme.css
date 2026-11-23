@@ -89,3 +89,5 @@ button:active { transform: scale(.98); }
 .lv-empty { padding: 28px 12px; text-align: center; color: var(--mu); }
 .lv-warn { color: var(--warn); }
 #srcBadge { color: var(--ac); border: 1px solid color-mix(in srgb, var(--ac) 40%, transparent); background: color-mix(in srgb, var(--ac) 10%, transparent); }
+.lv-filters .lv-check { flex-direction: row; align-items: center; gap: 8px; color: var(--tx); min-height: 40px; font-size: 13px; }
+.lv-filters .lv-check input { width: 20px; min-height: 20px; padding: 0; accent-color: var(--ac); }

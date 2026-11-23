@@ -4,7 +4,9 @@
     'use strict';
 
     const REST_BASE = 'https://fapi.binance.com/fapi/v1';
-    const WS_BASE = 'wss://fstream.binance.com/stream?streams=';
+    // Звичайні ринкові стріми (kline, miniTicker, markPrice) — на /market. Старі /stream і /ws після міграції Binance
+    // (developers.binance.com → Important WebSocket Change Notice) не віддають ці дані.
+    const WS_BASE = 'wss://fstream.binance.com/market/stream?streams=';
     const DEFAULTS = {
         topN: 40,             // скільки монет за обсягом стежимо
         historyCap: 130,      // 1m-свічок на монету (≥ 5m×15 для NATR і 65 хв для сплеску обсягу)
@@ -13,7 +15,8 @@
         reconnectMinMs: 1000,
         reconnectMaxMs: 30000,
         historyConcurrency: 5,
-        fetchTimeoutMs: 8000
+        fetchTimeoutMs: 8000,
+        includeTradfi: true   // false → лише крипто (PERPETUAL/COIN), без акцій, сировини, FX
     };
 
     function createFeed(options) {
@@ -23,6 +26,8 @@
         const tickers = new Map();   // symbol → { lastPrice, priceChangePercent, quoteVolume }
         const funding = new Map();   // symbol → ставка (частка, 0.0001 = 0.01%)
         let symbols = [];
+        let cryptoSet = null;        // symbol → true для крипто-перпетуалів; кешується між перепідключеннями
+        let wentLive = false;
         let socket = null;
         let dirty = false;
         let lastMsgAt = null;
@@ -42,9 +47,22 @@
                 .finally(() => { if (t) clearTimeout(t); });
         }
 
-        function pickUniverse(all) {
+        async function loadCryptoSet() {
+            if (cryptoSet) return cryptoSet;
+            try {
+                const info = await fetchJson('/exchangeInfo');
+                const list = (info.symbols || []).filter(s => s.status === 'TRADING' && s.contractType === 'PERPETUAL' && s.underlyingType === 'COIN');
+                if (!list.length) throw new Error('порожній exchangeInfo');
+                cryptoSet = new Set(list.map(s => s.symbol));
+            } catch (e) {
+                if (o.onNotice) o.onNotice(`Не вдалося отримати типи контрактів (${e.message}): показуємо всі, включно з акціями й сировиною.`);
+            }
+            return cryptoSet;
+        }
+
+        function pickUniverse(all, crypto) {
             return all
-                .filter(t => /USDT$/.test(t.symbol) && !t.symbol.includes('_'))
+                .filter(t => /USDT$/.test(t.symbol) && !t.symbol.includes('_') && (!crypto || crypto.has(t.symbol)))
                 .sort((a, b) => +b.quoteVolume - +a.quoteVolume)
                 .slice(0, o.topN)
                 .map(t => t.symbol);
@@ -53,7 +71,9 @@
         async function loadHistory(gen) {
             const all = await fetchJson('/ticker/24hr');
             if (gen !== generation) return false;
-            symbols = pickUniverse(all);
+            const crypto = o.includeTradfi ? null : await loadCryptoSet();
+            if (gen !== generation) return false;
+            symbols = pickUniverse(all, crypto);
             all.forEach(t => tickers.set(t.symbol, { lastPrice: t.lastPrice, priceChangePercent: t.priceChangePercent, quoteVolume: t.quoteVolume }));
             const queue = symbols.slice();
             const worker = async () => {
@@ -77,6 +97,7 @@
 
         function onMessage(raw) {
             lastMsgAt = o.now();
+            if (!wentLive) { wentLive = true; attempt = 0; setStatus('live'); }   // «Наживо» лише коли справді пішли дані
             let msg;
             try { msg = JSON.parse(raw); } catch (e) { return; }
             const { stream, data } = msg;
@@ -103,7 +124,8 @@
             const streams = [...symbols.map(s => s.toLowerCase() + '@kline_1m'), '!miniTicker@arr', '!markPrice@arr@1s'];
             const ws = new o.WebSocketImpl(WS_BASE + streams.join('/'));
             socket = ws;
-            ws.onopen = () => { if (gen !== generation) return; attempt = 0; lastMsgAt = o.now(); setStatus('live'); };
+            wentLive = false;
+            ws.onopen = () => { if (gen !== generation) return; lastMsgAt = o.now(); };   // відлік тиші — від відкриття
             ws.onmessage = ev => { if (gen === generation) onMessage(ev.data); };
             ws.onerror = () => { /* деталі помилки браузер не віддає; перепідключення — у onclose */ };
             ws.onclose = () => { if (gen === generation && running) scheduleReconnect('socket closed'); };
