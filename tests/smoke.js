@@ -46,6 +46,7 @@ async function run(name, fn, browser) {
         await page.route('**/api/v3/**', r => r.abort());
         await page.goto(PAGE); await page.waitForTimeout(1200);
         assert.equal(await page.$eval('#demoBadge', e => e.classList.contains('hidden')), false);
+        assert.match(await page.textContent('#demoBadge'), /ДЕМО/);
         await page.evaluate(() => window.openTab('backtest', document.getElementById('nav-backtest')));
         await page.waitForTimeout(400);
         assert.ok((await page.$$('#btLog > div')).length > 0);
@@ -120,6 +121,47 @@ async function run(name, fn, browser) {
         assert.match(row, /Пробій 20-св\. макс\./);
         assert.match(row, /RSI \d+/);
         assert.match(row, /Bull FVG/);
+    }, browser);
+
+
+    await run('screener rescans when timeframe changes and shows it in the header', async page => {
+        const intervals = [];
+        await page.route('**/api/v3/**', async route => {
+            const u = new URL(route.request().url());
+            const sym = u.searchParams.get('symbol');
+            if (u.pathname.endsWith('/klines') && sym === 'BTCUSDT') intervals.push(u.searchParams.get('interval'));
+            const body = u.pathname.endsWith('/klines') ? klines(sym, +u.searchParams.get('limit'))
+                : sym ? { priceChangePercent: '1', quoteVolume: '1e8' } : [{ symbol: 'BTCUSDT', lastPrice: '1', priceChangePercent: '1', quoteVolume: '1e8' }];
+            await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+        });
+        await page.goto(PAGE); await page.waitForTimeout(300);
+        await page.evaluate(() => window.openTab('screener', document.getElementById('nav-screener')));
+        await page.waitForTimeout(600);
+        assert.match(await page.textContent('#scrTfBadge'), /1H/);
+        await page.evaluate(() => window.changeTF('4h', '240', document.querySelectorAll('.tf-b')[2]));
+        await page.waitForTimeout(800);
+        assert.match(await page.textContent('#scrTfBadge'), /4H/);
+        assert.ok(intervals.includes('4h'));
+    }, browser);
+
+    await run('screener offline: demo row and 20 analysed rows', async page => {
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.goto(PAGE); await page.waitForTimeout(300);
+        await page.evaluate(() => window.openTab('screener', document.getElementById('nav-screener')));
+        await page.waitForTimeout(800);
+        assert.equal((await page.$$('#scrBody tr')).length, 21);   // 20 монет + рядок «ДЕМО»
+        assert.match(await page.textContent('#scrBody'), /ДЕМО-ДАНІ/);
+    }, browser);
+
+    await run('short but real kline history is not shown as demo data', async page => {
+        await page.route('**/api/v3/**', async route => {
+            const u = new URL(route.request().url());
+            const body = u.pathname.endsWith('/klines') ? klines('BTCUSDT', 12) : u.searchParams.get('symbol') ? { priceChangePercent: '1', quoteVolume: '1e8' } : [];
+            await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+        });
+        await page.goto(PAGE); await page.waitForTimeout(1000);
+        assert.equal(await page.evaluate(() => app.dataState), 'live');
+        assert.equal(await page.evaluate(() => app.candles.length), 12);
     }, browser);
 
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)

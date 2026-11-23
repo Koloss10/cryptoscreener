@@ -21,7 +21,7 @@
 
         window.app = {
             sym: 'BTCUSDT', tf: '1h', tvTf: '60', mode: 'canvas',
-            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, inFlightKey: null, isDemo: false, scrDemo: false,
+            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, inFlightKey: null, dataState: 'loading', scrDemo: false, scrTf: '',
             layers: { mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
             btMods: { smc: true, sr: true, fib: true, pa: false, ta: false, liq: false, rsi: true, st: false, macd: false, bb: false, ema: false, ichi: false, vwap: false, stoch: false },
             bot: {
@@ -120,7 +120,9 @@
         };
 
         window.syncDemoBadge = function() {
-            document.getElementById('demoBadge').classList.toggle('hidden', !app.isDemo);
+            const badge = document.getElementById('demoBadge');
+            badge.classList.toggle('hidden', app.dataState === 'live');
+            badge.textContent = app.dataState === 'loading' ? '⏳ Завантаження…' : '⚠ ДЕМО-ДАНІ';
         };
 
         window.loadMainData = function() {
@@ -131,7 +133,7 @@
 
             if (!app.candles.length) {
                 app.candles = window.generateFallbackCandles(app.sym, CANDLE_LIMIT);
-                app.isDemo = true;
+                app.dataState = 'loading';
                 window.syncDemoBadge();
                 window.updateBotGridPreview();
                 window.drawChart();
@@ -144,9 +146,11 @@
             ]).then(([kRaw, ticker, depth]) => {
                 if (reqId !== app.reqId) return;   // застаріла відповідь
 
-                if (Array.isArray(kRaw) && kRaw.length > 30) {
+                if (Array.isArray(kRaw) && kRaw.length > 0) {
                     app.candles = kRaw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], vol: +k[5] }));
-                    app.isDemo = false;
+                    app.dataState = 'live';
+                } else if (app.dataState === 'loading') {
+                    app.dataState = 'demo';   // Binance не відповів, лишаються згенеровані свічки
                 }
                 window.syncDemoBadge();
 
@@ -392,8 +396,12 @@
 
         window.executeBacktest = function() {
             if (!app.candles || app.candles.length < 40) {
+                if (app.dataState === 'live') {   // справжньої історії замало — не підміняємо її вигаданою
+                    document.getElementById('btLog').innerHTML = '<div class="text-amber-400 p-3 font-sans">Замало свічок для бектесту (потрібно ≥ 40).</div>';
+                    return;
+                }
                 app.candles = window.generateFallbackCandles(app.sym, CANDLE_LIMIT);
-                app.isDemo = true;
+                app.dataState = 'demo';
                 window.syncDemoBadge();
             }
 
@@ -934,6 +942,7 @@
             app.candles = [];
             window.loadMainData();
             if (app.mode === 'tv') window.loadTV();
+            if (!document.getElementById('view-screener').classList.contains('hidden')) window.scanTop20();
         };
 
         window.switchChartEngine = function(m) {
@@ -996,7 +1005,8 @@
                             return { t, scan: window.describeScan(window.Analysis.analyze(cs)) };
                         })
                 )).then(rows => {
-                    if (scanTf !== app.tf) return;   // користувач уже змінив таймфрейм
+                    if (scanTf !== app.tf) return;   // користувач уже змінив таймфрейм; changeTF запустить новий скан
+                    app.scrTf = scanTf;
                     app.scrList = rows.map(({ t, scan }) => ({
                         sym: t.symbol, p: +t.lastPrice, chg: +t.priceChangePercent, vol: +t.quoteVolume, ...scan
                     }));
@@ -1018,6 +1028,7 @@
             if (app.scrFilter === 'pat') list = list.filter(x => x.pat.includes('📐') || x.pat.includes('🕯️'));
             if (app.scrFilter === 'smc') list = list.filter(x => x.smc.includes('🟢'));
 
+            document.getElementById('scrTfBadge').textContent = app.scrTf ? `(${app.scrTf.toUpperCase()})` : '';
             const demoRow = app.scrDemo ? '<tr><td colspan="6" class="p-2 text-amber-300 font-bold">⚠ ДЕМО-ДАНІ: Binance недоступний</td></tr>' : '';
             document.getElementById('scrBody').innerHTML = demoRow + list.map(x => `
                 <tr>
