@@ -9,7 +9,12 @@
         const FETCH_TIMEOUT_MS = 6000;
         const TF_MS = { '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000, '1M': 2592000000 };
         // спот → резервний спот → ф'ючерси (для монет, яких немає на споті, напр. 1000PEPEUSDT); шляхи /klines, /ticker/24hr, /depth однакові
-        const BINANCE_BASES = ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3', 'https://fapi.binance.com/fapi/v1'];
+        const BINANCE_FUTURES = 'https://fapi.binance.com/fapi/v1';
+        const BINANCE_BASES = {
+            spot: ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3', BINANCE_FUTURES],
+            futures: [BINANCE_FUTURES, 'https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3']
+        };
+        const DEPTH_LIMIT = 20;               // валідний і для споту, і для ф'ючерсів (ф'ючерси: 5/10/20/50/100/500/1000)
         const TIME_EXIT_BARS = 16;            // вихід по часу в бектесті
         const LIQ_MARGIN_FRACTION = 0.9;      // ліквідація при втраті 90% маржі
 
@@ -22,7 +27,7 @@
 
         window.app = {
             sym: 'BTCUSDT', tf: '1h', tvTf: '60', mode: 'canvas',
-            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, inFlightKey: null, dataState: 'loading', scrDemo: false, scrTf: '',
+            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, preferFutures: true, dataSrc: '', inFlightKey: null, dataState: 'loading', scrDemo: false, scrTf: '',
             layers: { mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
             btMods: { smc: true, sr: true, fib: true, pa: false, ta: false, liq: false, rsi: true, st: false, macd: false, bb: false, ema: false, ichi: false, vwap: false, stoch: false },
             bot: {
@@ -107,8 +112,9 @@
             return arr;
         };
 
-        // Запит до Binance із таймаутом; повертає null, якщо обидва хости недоступні
-        window.fetchBinance = function(path) {
+        // Запит до Binance із таймаутом; src — що пробувати першим ('spot' | 'futures'); onBase(base) — яке джерело відповіло.
+        // Повертає null, якщо недоступні всі хости
+        window.fetchBinance = function(path, src = 'spot', onBase) {
             const get = (base) => {
                 const ctl = new AbortController();
                 const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
@@ -117,13 +123,19 @@
                     .catch(() => null)
                     .finally(() => clearTimeout(timer));
             };
-            return BINANCE_BASES.reduce((p, base) => p.then(d => (d !== null ? d : get(base))), Promise.resolve(null));
+            return BINANCE_BASES[src].reduce((p, base) => p.then(d => {
+                if (d !== null) return d;
+                return get(base).then(r => { if (r !== null && onBase) onBase(base); return r; });
+            }), Promise.resolve(null));
         };
 
         window.syncDemoBadge = function() {
             const badge = document.getElementById('demoBadge');
             badge.classList.toggle('hidden', app.dataState === 'live');
             badge.textContent = app.dataState === 'loading' ? '⏳ Завантаження…' : '⚠ ДЕМО-ДАНІ';
+            const src = document.getElementById('srcBadge');
+            src.hidden = app.dataState !== 'live';
+            src.textContent = app.dataSrc;
         };
 
         window.loadMainData = function() {
@@ -140,16 +152,19 @@
                 window.drawChart();
             }
 
+            const src = app.preferFutures ? 'futures' : 'spot';
+            let usedBase = '';
             Promise.all([
-                window.fetchBinance(`/klines?symbol=${app.sym}&interval=${app.tf}&limit=${CANDLE_LIMIT}`),
-                window.fetchBinance(`/ticker/24hr?symbol=${app.sym}`),
-                window.fetchBinance(`/depth?symbol=${app.sym}&limit=30`)
+                window.fetchBinance(`/klines?symbol=${app.sym}&interval=${app.tf}&limit=${CANDLE_LIMIT}`, src, b => { usedBase = b; }),
+                window.fetchBinance(`/ticker/24hr?symbol=${app.sym}`, src),
+                window.fetchBinance(`/depth?symbol=${app.sym}&limit=${DEPTH_LIMIT}`, src)
             ]).then(([kRaw, ticker, depth]) => {
                 if (reqId !== app.reqId) return;   // застаріла відповідь
 
                 if (Array.isArray(kRaw) && kRaw.length > 0) {
                     app.candles = kRaw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], vol: +k[5] }));
                     app.dataState = 'live';
+                    app.dataSrc = usedBase === BINANCE_FUTURES ? 'Binance Futures' : 'Binance Spot';
                 } else if (app.dataState === 'loading') {
                     app.dataState = 'demo';   // Binance не відповів, лишаються згенеровані свічки
                 }
@@ -901,8 +916,22 @@
             `;
 
             const hasDepth = depth && Array.isArray(depth.asks) && depth.asks.length > 0 && Array.isArray(depth.bids) && depth.bids.length > 0;
-            const asks = hasDepth ? depth.asks.slice(0, 5).reverse() : [[lastP*1.0015, 2.1],[lastP*1.001, 1.4],[lastP*1.0005, 3.2]];
-            const bids = hasDepth ? depth.bids.slice(0, 5) : [[lastP*0.9995, 3.5],[lastP*0.999, 1.8],[lastP*0.9985, 2.7]];
+            const live = document.getElementById('bookLive');
+            live.textContent = hasDepth ? '● LIVE' : '● немає даних';
+            live.className = 'text-[10px] font-bold ' + (hasDepth ? 'text-emerald-400' : 'text-slate-500');
+            if (!hasDepth) {   // без даних біржі стакан не вигадуємо
+                const na = '<div class="px-1 py-2 text-slate-500 text-center">стакан недоступний</div>';
+                document.getElementById('asksList').innerHTML = na;
+                document.getElementById('bidsList').innerHTML = '';
+                document.getElementById('bidPctTxt').textContent = 'Покупці: —';
+                document.getElementById('askPctTxt').textContent = 'Продавці: —';
+                document.getElementById('bidBar').style.width = '50%';
+                document.getElementById('midPriceBook').textContent = '$' + fmt(lastP);
+                document.getElementById('wallsInfo').innerHTML = '';
+                return;
+            }
+            const asks = depth.asks.slice(0, 5).reverse();
+            const bids = depth.bids.slice(0, 5);
 
             const sumB = bids.reduce((s, b) => s + (+b[0])*(+b[1]), 0);
             const sumA = asks.reduce((s, a) => s + (+a[0])*(+a[1]), 0);
@@ -926,7 +955,8 @@
         window.resetChartZoom = function() { app.visibleBars = 55; app.panOffset = 0; window.drawChart(); };
         window.toggleFS = function() { document.getElementById('chartPanel').classList.toggle('fullscreen-box'); setTimeout(window.drawChart, 60); };
 
-        window.changeSymbol = function(s) {
+        window.changeSymbol = function(s, opts) {
+            if (opts && typeof opts.futures === 'boolean') app.preferFutures = opts.futures;
             app.sym = s;
             document.getElementById('coinSelect').value = s;
             app.candles = [];

@@ -138,3 +138,23 @@ test('ticker request failure reports error and retries', async () => {
     assert.equal(statuses.at(-1), 'reconnecting');
     feed.stop();
 });
+
+test('after a stale reconnect, a tick before the new socket opens does not reconnect again', async () => {
+    const { feed, setClock } = setup();
+    feed.start(); await flush(); await flush(); await flush();
+    FakeWS.all[0].open();
+    setClock(16000);
+    feed.tick();                                          // тиша → перепідключення
+    await new Promise(r => setTimeout(r, 20)); await flush(); await flush(); await flush();
+    assert.equal(FakeWS.all.length, 2);                   // новий сокет створено, ще не відкрито
+    feed.tick();                                          // тік до onopen не повинен вважати його «тихим»
+    await new Promise(r => setTimeout(r, 20)); await flush(); await flush(); await flush();
+    assert.equal(FakeWS.all.length, 2);
+});
+
+test('when no symbol gets history the feed reports an error instead of showing empty rows as live', async () => {
+    const { feed, statuses } = setup({ fail: u => u.includes('/klines') });
+    feed.start(); await flush(); await flush(); await flush();
+    assert.ok(statuses.includes('error'));
+    assert.equal(FakeWS.all.length, 0);
+});

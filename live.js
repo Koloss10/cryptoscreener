@@ -19,10 +19,12 @@
         { key: 'vol24', label: 'Обсяг 24г', fmt: usd }
     ];
 
-    const state = { rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, status: 'connecting' };
+    const state = { rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, status: 'connecting', detail: '' };
 
     function pct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
     function usd(v) { return '$' + window.fmtK(v); }
+    const DETAIL_TEXT = { stale: 'немає даних понад 15 с', 'socket closed': "з'єднання закрито" };
+    const failureText = () => `Binance Futures: ${DETAIL_TEXT[state.detail] || state.detail}. Повторюємо автоматично. Якщо не з'єднується — перевірте VPN/регіон: Binance Futures недоступний у частині країн.`;
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     function load() {
@@ -59,20 +61,24 @@
 
         const body = document.getElementById('lvBody');
         if (!rows.length) {
-            body.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="lv-empty">${state.rows.length ? 'Жодна монета не пройшла фільтри.' : 'Очікуємо дані…'}</td></tr>`;
+            const msg = state.rows.length ? 'Жодна монета не пройшла фільтри.' : (state.detail ? esc(failureText()) : 'Очікуємо дані…');
+            body.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="lv-empty">${msg}</td></tr>`;
         } else {
             body.innerHTML = rows.map(r => `<tr data-sym="${esc(r.symbol)}" tabindex="0">${COLUMNS.map(c => cell(c, r)).join('')}</tr>`).join('');
         }
         const chip = document.getElementById('lvStatus');
         chip.textContent = STATUS_TEXT[state.status] || state.status;
         chip.dataset.s = state.status;
+        const detail = document.getElementById('lvDetail');
+        detail.hidden = !(state.detail && state.status !== 'live');
+        detail.textContent = detail.hidden ? '' : failureText();
         document.getElementById('lvCount').textContent = `${rows.length} з ${state.rows.length} монет`;
     }
 
     function openSymbol(sym) {
         const sel = document.getElementById('coinSelect');
         if (![...sel.options].some(o => o.value === sym)) sel.add(new Option(sym.replace('USDT', ' / USDT'), sym));
-        window.changeSymbol(sym);
+        window.changeSymbol(sym, { futures: true });   // ціна, свічки й стакан — ті самі ф'ючерси, що й у таблиці
         window.openTab('terminal', document.getElementById('nav-terminal'));
     }
 
@@ -109,7 +115,7 @@
             WebSocketImpl: window.WebSocket,
             now: () => Date.now(),
             onRows: rows => { state.rows = rows; render(); },
-            onStatus: s => { state.status = s; render(); }
+            onStatus: (s, detail) => { state.status = s; state.detail = s === 'live' ? '' : (detail || state.detail); render(); }
         });
         window.liveFeed = feed;
         window.renderLive = render;      // викликається при відкритті вкладки

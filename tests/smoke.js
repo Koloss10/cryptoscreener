@@ -88,18 +88,20 @@ async function run(name, fn, browser) {
 
     await run('refresh tick does not duplicate an in-flight request', async page => {
         let klineCalls = 0;
-        await page.route('**/api/v3/**', async route => {
-            const u = new URL(route.request().url());
-            if (u.pathname.endsWith('/klines')) { klineCalls++; await new Promise(r => setTimeout(r, 500)); }
+        // графік іде спершу у ф'ючерси: рахуємо перший запит ланцюжка (1h-свічки), решта хостів і потік скрінера — обрив
+        await page.route('**/fapi/v1/klines**', async route => {
+            if (new URL(route.request().url()).searchParams.get('interval') === '1h') klineCalls++;
+            await new Promise(r => setTimeout(r, 500));
             await route.abort();
         });
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.route('**/fapi/v1/ticker/**', r => r.abort());
         await page.goto(PAGE); await page.waitForTimeout(100);
-        const before = klineCalls;
+        assert.equal(klineCalls, 1);
         await page.evaluate(() => { window.loadMainData(); window.loadMainData(); });
         await page.waitForTimeout(100);
-        assert.equal(klineCalls, before);   // обидва виклики пропущено: запит для цієї пари вже летить
+        assert.equal(klineCalls, 1);   // обидва виклики пропущено: запит для цієї пари вже летить
     }, browser);
-
 
     await run('screener: real analysis from klines (breakout + RSI), no heuristic text', async page => {
         await page.route('**/api/v3/**', async route => {
@@ -233,6 +235,40 @@ async function run(name, fn, browser) {
         const after = await page.$eval('#lvBody tr[data-sym="BTCUSDT"] td:nth-child(2)', e => e.textContent);
         assert.notEqual(before, after);
         assert.match(after, /250/);
+    }, browser);
+
+
+    await run('screener row opens a futures-first chart: source label, no invented order book', async page => {
+        await liveSetup(page);
+        await page.click('#lvBody tr[data-sym="1000PEPEUSDT"]');
+        await page.waitForTimeout(800);
+        assert.equal(await page.evaluate(() => app.dataSrc), 'Binance Futures');
+        assert.equal(await page.textContent('#srcBadge'), 'Binance Futures');
+        assert.match(await page.textContent('#asksList'), /стакан недоступний/);   // fapi-мок не віддає depth
+        assert.doesNotMatch(await page.textContent('#bidsList'), /\d/);
+        assert.doesNotMatch(await page.textContent('#bookLive'), /LIVE/);          // без стакана не пишемо LIVE
+    }, browser);
+
+    await run('futures depth uses a limit that the futures API accepts', async page => {
+        const limits = [];
+        await liveSetup(page);
+        await page.route('**/fapi/v1/depth**', route => { limits.push(new URL(route.request().url()).searchParams.get('limit')); return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"asks":[["101","1"]],"bids":[["99","1"]]}' }); });
+        await page.click('#lvBody tr[data-sym="BTCUSDT"]');
+        await page.waitForTimeout(800);
+        assert.deepEqual([...new Set(limits)], ['20']);                                // 5/10/20/50/100/500/1000 — валідні
+        assert.match(await page.textContent('#asksList'), /101/);
+    }, browser);
+
+    await run('live tab keeps showing why it cannot connect (HTTP 451)', async page => {
+        await page.addInitScript(() => { window.WebSocket = class { close() {} }; });
+        await page.route('**/fapi/v1/**', r => r.fulfill({ status: 451, body: '' }));
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.goto(PAGE); await page.waitForTimeout(800);
+        const msg = await page.textContent('#lvDetail');
+        assert.match(msg, /HTTP 451/);
+        assert.match(msg, /VPN/);
+        assert.equal(await page.$eval('#lvDetail', e => e.hidden), false);
+        assert.match(await page.textContent('#lvBody'), /HTTP 451/);
     }, browser);
 
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)

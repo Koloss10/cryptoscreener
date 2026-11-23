@@ -70,7 +70,9 @@
                 }
             };
             await Promise.all(Array.from({ length: o.historyConcurrency }, worker));
-            return gen === generation;
+            if (gen !== generation) return false;
+            if (symbols.length && symbols.every(s => !candles.get(s) || !candles.get(s).length)) throw new Error('історію свічок не завантажено');
+            return true;
         }
 
         function onMessage(raw) {
@@ -109,6 +111,7 @@
 
         function scheduleReconnect(reason) {
             generation++;                                  // відсікає все, що ще летить зі старого з'єднання
+            lastMsgAt = null;                              // таймер тиші не має зіпсувати щойно відкрите з'єднання
             if (socket) { try { socket.onclose = null; socket.close(); } catch (e) { /* вже закрито */ } socket = null; }
             const delay = Math.min(o.reconnectMaxMs, o.reconnectMinMs * 2 ** attempt);
             attempt++;

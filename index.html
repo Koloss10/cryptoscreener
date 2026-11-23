@@ -44,6 +44,7 @@
             </div>
 
             <div class="flex items-center gap-1.5">
+                <span id="srcBadge" hidden class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold"></span>
                 <span id="demoBadge" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">⏳ Завантаження…</span>
                 <span id="activeBotHeaderBadge" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold animate-pulse">
                     🤖 Бот Активний
@@ -82,6 +83,7 @@
             <label>NATR 5m від, %<input id="lvMinNatr" type="number" min="0" step="0.1" inputmode="decimal"></label>
             <label>Сплеск обсягу від, ×<input id="lvMinSpike" type="number" min="0" step="0.5" inputmode="decimal"></label>
         </div>
+        <p id="lvDetail" class="lv-note lv-warn" role="status" hidden></p>
         <div class="lv-wrap">
             <table class="lv-table"><thead id="lvHead"></thead><tbody id="lvBody"></tbody></table>
         </div>
@@ -164,7 +166,7 @@
                 <div class="panel p-3">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
                         <h3 class="text-xs font-extrabold text-white uppercase">📊 Біржовий Стакан (Order Book)</h3>
-                        <span class="text-[10px] text-emerald-400 font-bold">● LIVE</span>
+                        <span id="bookLive" class="text-[10px] text-slate-500 font-bold">● —</span>
                     </div>
                     <div class="flex justify-between text-[11px] font-bold mb-1">
                         <span class="text-emerald-400" id="bidPctTxt">Покупці: 5%</span>
