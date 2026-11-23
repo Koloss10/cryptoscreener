@@ -62,16 +62,17 @@
 
         // Збирає index.html + styles.css + app.js в один автономний .html (працює через http/https)
         window.downloadAppFile = function() {
-            const files = ['index.html', 'styles.css', 'app.js'];
+            const files = ['index.html', 'styles.css', 'analysis.js', 'app.js'];
             Promise.all(files.map(f => fetch(f).then(r => {
                 if (!r.ok) throw new Error(f);
                 return r.text();
-            }))).then(([html, css, code]) => {
+            }))).then(([html, css, analysis, app_]) => {
                 const scriptClose = '<' + '/script>';
-                const safeCode = code.replace(/<\/script/gi, '<\\/script');
+                const safe = (src) => src.replace(/<\/script/gi, '<\\/script');
                 const out = html
                     .replace('<link rel="stylesheet" href="styles.css">', () => `<style>\n${css}</style>`)
-                    .replace('<script src="app.js" defer>' + scriptClose, () => '<script>\n' + safeCode + scriptClose);
+                    .replace('<script src="analysis.js" defer>' + scriptClose, () => '<script>\n' + safe(analysis) + scriptClose)
+                    .replace('<script src="app.js" defer>' + scriptClose, () => '<script>\n' + safe(app_) + scriptClose);
                 const url = URL.createObjectURL(new Blob([out], { type: 'text/html;charset=utf-8' }));
                 const a = document.createElement('a');
                 a.href = url;
@@ -966,24 +967,42 @@
             if (id === 'backtest') setTimeout(window.executeBacktest, 30);
         };
 
+        // Текст колонок скрінера з результату Analysis.analyze (чиста функція в analysis.js)
+        window.describeScan = function(a) {
+            if (!a) return { pat: '—', smc: '—', rsi: null };
+            let pat = '—';
+            if (a.breakout) pat = `📐 Пробій 20-св. ${a.breakout.type === 'up' ? 'макс.' : 'мін.'}`;
+            else if (a.candle) pat = `🕯️ ${a.candle}`;
+            else if (a.nearLevel) pat = `🎯 Біля ${a.nearLevel.type === 'support' ? 'підтримки' : 'опору'}`;
+            const smc = a.fvg ? `${a.fvg.type === 'bull' ? '🟢 Bull' : '🔴 Bear'} FVG (${a.fvg.age} св.)` : '—';
+            return { pat, smc, rsi: a.rsi };
+        };
+
         window.scanTop20 = function() {
+            const scanTf = app.tf;
             window.fetchBinance('/ticker/24hr').then(all => {
                 app.scrDemo = !(Array.isArray(all) && all.length);
-                if (!app.scrDemo) {
-                    app.scrList = COINS.map(s => all.find(x => x.symbol === s)).filter(Boolean).map(t => ({
-                        sym: t.symbol, p: +t.lastPrice, chg: +t.priceChangePercent, vol: +t.quoteVolume,
-                        pat: Math.abs(+t.priceChangePercent) > 2.5 ? '📐 Пробій прапора / Трикутника' : '🕯️ Пін-бар біля рівня П/С',
-                        smc: +t.priceChangePercent >= 0 ? '🟢 Bull OB + FVG' : '🔴 Bear OB + FVG'
+                const tickers = app.scrDemo
+                    ? COINS.map((s, idx) => ({ symbol: s, lastPrice: BASE_PRICES[s] || 10, priceChangePercent: (idx % 2 === 0 ? 1 : -1) * (1.2 + (idx * 0.45) % 5.5), quoteVolume: 120000000 + idx * 45000000 }))
+                    : COINS.map(s => all.find(x => x.symbol === s)).filter(Boolean);
+
+                return Promise.all(tickers.map(t =>
+                    (app.scrDemo ? Promise.resolve(null) : window.fetchBinance(`/klines?symbol=${t.symbol}&interval=${scanTf}&limit=120`))
+                        .then(k => {
+                            const cs = Array.isArray(k)
+                                // остання свічка ще не закрита — відкидаємо
+                                ? k.slice(0, -1).map(x => ({ time: x[0], open: +x[1], high: +x[2], low: +x[3], close: +x[4], vol: +x[5] }))
+                                : (app.scrDemo ? window.generateFallbackCandles(t.symbol, 120) : null);
+                            return { t, scan: window.describeScan(window.Analysis.analyze(cs)) };
+                        })
+                )).then(rows => {
+                    if (scanTf !== app.tf) return;   // користувач уже змінив таймфрейм
+                    app.scrList = rows.map(({ t, scan }) => ({
+                        sym: t.symbol, p: +t.lastPrice, chg: +t.priceChangePercent, vol: +t.quoteVolume, ...scan
                     }));
-                } else {
-                    app.scrList = COINS.map((s, idx) => {
-                        const p = BASE_PRICES[s] || 10;
-                        const chg = ((idx % 2 === 0 ? 1 : -1) * (1.2 + (idx * 0.45) % 5.5));
-                        return { sym: s, p, chg, vol: 120000000 + idx * 45000000, pat: Math.abs(chg) > 2.5 ? '📐 Висхідний трикутник' : '🕯️ Бичаче поглинання', smc: chg >= 0 ? '🟢 Bull OB + FVG' : '🔴 Bear OB + FVG' };
-                    });
-                }
-                window.renderScr();
-            });
+                    window.renderScr();
+                });
+            }).catch(err => console.error('scanTop20 failed:', err));
         };
 
         window.setScrFilter = function(f, btn) {
@@ -996,7 +1015,7 @@
         window.renderScr = function() {
             let list = app.scrList;
             if (app.scrFilter === 'vol') list = list.filter(x => Math.abs(x.chg) > 2.0);
-            if (app.scrFilter === 'pat') list = list.filter(x => x.pat.includes('📐'));
+            if (app.scrFilter === 'pat') list = list.filter(x => x.pat.includes('📐') || x.pat.includes('🕯️'));
             if (app.scrFilter === 'smc') list = list.filter(x => x.smc.includes('🟢'));
 
             const demoRow = app.scrDemo ? '<tr><td colspan="6" class="p-2 text-amber-300 font-bold">⚠ ДЕМО-ДАНІ: Binance недоступний</td></tr>' : '';
@@ -1005,7 +1024,7 @@
                     <td class="p-2 font-bold text-white">${x.sym}</td>
                     <td class="p-2 font-mono">$${fmt(x.p)} <span class="${x.chg>=0?'text-emerald-400':'text-red-400'}">(${x.chg>=0?'+':''}${x.chg.toFixed(2)}%)</span></td>
                     <td class="p-2 font-mono">$${fmtK(x.vol)}</td>
-                    <td class="p-2 text-amber-300">${x.pat}</td>
+                    <td class="p-2 text-amber-300">${x.pat}${x.rsi === null ? '' : ` <span class="text-slate-500">RSI ${x.rsi.toFixed(0)}</span>`}</td>
                     <td class="p-2">${x.smc}</td>
                     <td class="p-2"><button onclick="window.changeSymbol('${x.sym}');window.openTab('velesbot',document.getElementById('nav-velesbot'))" class="gold-btn px-2 py-1 rounded text-[10px]">🤖 У Veles-Бот</button></td>
                 </tr>`).join('');

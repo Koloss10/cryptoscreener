@@ -551,7 +551,7 @@
             <table class="w-full text-left text-xs">
                 <thead>
                     <tr class="border-b border-slate-800 text-slate-400">
-                        <th class="p-2">Монета</th><th class="p-2">Ціна / 24г</th><th class="p-2">Об'єм ($)</th><th class="p-2">Фігура / Свічка</th><th class="p-2">SMC</th><th class="p-2">Дія</th>
+                        <th class="p-2">Монета</th><th class="p-2">Ціна / 24г</th><th class="p-2">Об'єм ($)</th><th class="p-2">Пробій / Свічка</th><th class="p-2">SMC</th><th class="p-2">Дія</th>
                     </tr>
                 </thead>
                 <tbody id="scrBody" class="divide-y divide-slate-800/60"></tbody>
@@ -601,6 +601,7 @@
         <p><b class="text-amber-400">📐 Логарифмічний розподіл цін:</b> Якщо значення <code>&gt; 1.0</code>, перші ордери сітки розташовуються ближче до ціни входу, а останні — ширше (ідеально для високої волатильності). Якщо <code>&lt; 1.0</code> — ордери щільніше концентруються в кінці сітки біля сильних рівнів підтримки.</p>
         <p><b class="text-cyan-400">🛡️ Що таке % MAE у Бектестері Veles:</b> <i>Maximum Adverse Excursion</i> — це максимальне просідання ціни проти відкритої позиції бота до моменту її закриття. Чим більший MAE, тим більший запас маржі потрібен, щоб не ліквідуватися на різких тінях (сквізах). Дивіться також «Макс. просадка капіталу» — це просадка всього рахунку, а не однієї угоди.</p>
     </section>
+    <script src="analysis.js" defer></script>
     <script src="app.js" defer></script>
 </body>
 </html>

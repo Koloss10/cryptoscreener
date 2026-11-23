@@ -99,6 +99,29 @@ async function run(name, fn, browser) {
         assert.equal(klineCalls, before);   // обидва виклики пропущено: запит для цієї пари вже летить
     }, browser);
 
+
+    await run('screener: real analysis from klines (breakout + RSI), no heuristic text', async page => {
+        await page.route('**/api/v3/**', async route => {
+            const u = new URL(route.request().url());
+            const sym = u.searchParams.get('symbol');
+            let body;
+            if (u.pathname.endsWith('/ticker/24hr') && !sym) body = [{ symbol: 'BTCUSDT', lastPrice: '110', priceChangePercent: '0.1', quoteVolume: '5e8' }];
+            else if (u.pathname.endsWith('/klines')) {
+                // 100 плоских свічок і різкий пробій вгору; остання (незакрита) свічка відкидається
+                body = Array.from({ length: 101 }, (_, i) => i < 99 ? [i, 100, 101, 99, 100, 1] : i === 99 ? [i, 102, 112, 102, 110, 1] : [i, 110, 111, 109, 110, 1]);
+            } else body = [];
+            await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+        });
+        await page.goto(PAGE); await page.waitForTimeout(300);
+        await page.evaluate(() => window.openTab('screener', document.getElementById('nav-screener')));
+        await page.waitForTimeout(800);
+        const row = await page.$eval('#scrBody tr', tr => tr.textContent.replace(/\s+/g, ' '));
+        assert.match(row, /BTCUSDT/);
+        assert.match(row, /Пробій 20-св\. макс\./);
+        assert.match(row, /RSI \d+/);
+        assert.match(row, /Bull FVG/);
+    }, browser);
+
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)
     const server = http.createServer((req, res) => {
         const f = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url.split('?')[0]);
