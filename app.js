@@ -8,7 +8,8 @@
         const CANDLE_LIMIT = 1000;            // макс. для Binance klines; більше історії = змістовніший бектест
         const FETCH_TIMEOUT_MS = 6000;
         const TF_MS = { '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000, '1M': 2592000000 };
-        const BINANCE_BASES = ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3'];
+        // спот → резервний спот → ф'ючерси (для монет, яких немає на споті, напр. 1000PEPEUSDT); шляхи /klines, /ticker/24hr, /depth однакові
+        const BINANCE_BASES = ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3', 'https://fapi.binance.com/fapi/v1'];
         const TIME_EXIT_BARS = 16;            // вихід по часу в бектесті
         const LIQ_MARGIN_FRACTION = 0.9;      // ліквідація при втраті 90% маржі
 
@@ -60,19 +61,19 @@
             return Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 2 }).format(Number(n) || 0);
         };
 
-        // Збирає index.html + styles.css + app.js в один автономний .html (працює через http/https)
+        // Збирає сторінку й усі її локальні .css/.js в один автономний .html (працює через http/https)
         window.downloadAppFile = function() {
-            const files = ['index.html', 'styles.css', 'analysis.js', 'app.js'];
-            Promise.all(files.map(f => fetch(f).then(r => {
-                if (!r.ok) throw new Error(f);
-                return r.text();
-            }))).then(([html, css, analysis, app_]) => {
-                const scriptClose = '<' + '/script>';
-                const safe = (src) => src.replace(/<\/script/gi, '<\\/script');
+            const scriptClose = '<' + '/script>';
+            const safe = (src) => src.replace(/<\/script/gi, '<\\/script');
+            const text = (f) => fetch(f).then(r => { if (!r.ok) throw new Error(f); return r.text(); });
+            text('index.html').then(async html => {
+                const css = [...html.matchAll(/<link rel="stylesheet" href="([^":]+)">/g)];
+                const scripts = [...html.matchAll(/<script src="([^":]+)" defer><\/script>/g)];
+                const bodies = new Map();
+                await Promise.all([...css, ...scripts].map(m => text(m[1]).then(t => bodies.set(m[0], t))));
                 const out = html
-                    .replace('<link rel="stylesheet" href="styles.css">', () => `<style>\n${css}</style>`)
-                    .replace('<script src="analysis.js" defer>' + scriptClose, () => '<script>\n' + safe(analysis) + scriptClose)
-                    .replace('<script src="app.js" defer>' + scriptClose, () => '<script>\n' + safe(app_) + scriptClose);
+                    .replace(/<link rel="stylesheet" href="([^":]+)">/g, m => `<style>\n${bodies.get(m)}</style>`)
+                    .replace(/<script src="([^":]+)" defer><\/script>/g, m => '<script>\n' + safe(bodies.get(m)) + scriptClose);
                 const url = URL.createObjectURL(new Blob([out], { type: 'text/html;charset=utf-8' }));
                 const a = document.createElement('a');
                 a.href = url;
@@ -116,7 +117,7 @@
                     .catch(() => null)
                     .finally(() => clearTimeout(timer));
             };
-            return get(BINANCE_BASES[0]).then(d => (d !== null ? d : get(BINANCE_BASES[1])));
+            return BINANCE_BASES.reduce((p, base) => p.then(d => (d !== null ? d : get(base))), Promise.resolve(null));
         };
 
         window.syncDemoBadge = function() {
@@ -969,6 +970,7 @@
             document.querySelectorAll('.t-btn').forEach(b => b.className = "t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400");
             if (btn) btn.className = "t-btn gold-btn py-1.5 px-2 rounded-lg text-xs";
 
+            if (id === 'live' && window.renderLive) window.renderLive();
             if (id === 'terminal') setTimeout(window.drawChart, 50);
             if (id === 'velesbot') window.updateBotGridPreview();
             if (id === 'screener') window.scanTop20();

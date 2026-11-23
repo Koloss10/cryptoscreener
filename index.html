@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoScreener v6.0 — Veles DCA Simulator, Screener &amp; Backtester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="theme.css">
     <script src="https://s3.tradingview.com/tv.js" defer></script>
 </head>
 <body class="min-h-screen p-2 sm:p-3 pb-16">
@@ -51,12 +55,13 @@
         </div>
     </header>
 
-    <!-- НАВІГАЦІЯ ВКЛАДОК (7 РОЗДІЛІВ) -->
-    <nav class="grid grid-cols-3 sm:grid-cols-7 gap-1.5 mb-2.5 bg-[#131722] p-1.5 rounded-xl border border-[#1e2433]">
-        <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📈 Термінал</button>
+    <!-- НАВІГАЦІЯ ВКЛАДОК (8 РОЗДІЛІВ) -->
+    <nav class="grid grid-cols-3 gap-1.5 mb-2.5 bg-[#131722] p-1.5 rounded-xl border border-[#1e2433]">
+        <button id="nav-live" onclick="window.openTab('live',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📡 Скринер</button>
+        <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📈 Термінал</button>
         <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот (симуляція)</button>
         <button id="nav-backtest" onclick="window.openTab('backtest',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-amber-300">🧪 Veles Бектест</button>
-        <button id="nav-screener" onclick="window.openTab('screener',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔍 Топ-20</button>
+        <button id="nav-screener" onclick="window.openTab('screener',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔍 Сигнали</button>
         <button id="nav-multi" onclick="window.openTab('multi',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🎛️ Мульти (10)</button>
         <button id="nav-alerts" onclick="window.openTab('alerts',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔔 Алерти</button>
         <button id="nav-wiki" onclick="window.openTab('wiki',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📚 Вікі</button>
@@ -65,7 +70,25 @@
     <!-- =========================================================================
          ВКЛАДКА 1: ТЕРМІНАЛ (З ВІЗУАЛІЗАЦІЄЮ СІТКИ БОТА VELES НА ГРАФІКУ)
     ========================================================================== -->
-    <main id="view-terminal" class="tab-view space-y-2.5">
+    <section id="view-live" class="tab-view panel p-3.5">
+        <div class="lv-top">
+            <h2>📡 Скринер Binance Futures</h2>
+            <span id="lvCount" class="lv-mu" style="font-size:12px"></span>
+            <span id="lvStatus" class="lv-chip" data-s="connecting">Підключення…</span>
+        </div>
+        <div class="lv-filters">
+            <label>Пошук<input id="lvSearch" type="search" placeholder="BTC, SOL…" autocomplete="off"></label>
+            <label>Обсяг 1г від, млн $<input id="lvMinVol" type="number" min="0" step="0.5" inputmode="decimal"></label>
+            <label>NATR 5m від, %<input id="lvMinNatr" type="number" min="0" step="0.1" inputmode="decimal"></label>
+            <label>Сплеск обсягу від, ×<input id="lvMinSpike" type="number" min="0" step="0.5" inputmode="decimal"></label>
+        </div>
+        <div class="lv-wrap">
+            <table class="lv-table"><thead id="lvHead"></thead><tbody id="lvBody"></tbody></table>
+        </div>
+        <p class="lv-note">Топ-40 USDT-ф'ючерсів за обсягом. Дані Binance Futures по WebSocket, метрики оновлюються раз на 2 с. Підсвітка: NATR ≥ 2% і сплеск обсягу ≥ ×3. Клік по рядку відкриває графік. Це аналітика, а не рекомендація.</p>
+    </section>
+
+    <main id="view-terminal" class="tab-view hidden space-y-2.5">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
             <div class="lg:col-span-8 space-y-2.5">
                 <div id="chartPanel" class="panel p-2.5 flex flex-col">
@@ -602,6 +625,9 @@
         <p><b class="text-cyan-400">🛡️ Що таке % MAE у Бектестері Veles:</b> <i>Maximum Adverse Excursion</i> — це максимальне просідання ціни проти відкритої позиції бота до моменту її закриття. Чим більший MAE, тим більший запас маржі потрібен, щоб не ліквідуватися на різких тінях (сквізах). Дивіться також «Макс. просадка капіталу» — це просадка всього рахунку, а не однієї угоди.</p>
     </section>
     <script src="analysis.js" defer></script>
+    <script src="metrics.js" defer></script>
+    <script src="feed.js" defer></script>
     <script src="app.js" defer></script>
+    <script src="live.js" defer></script>
 </body>
 </html>

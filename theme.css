@@ -1,0 +1,89 @@
+/* Тема Orbix (токени й компоненти з Koloss10/Orbix, src/orbix.css) + приведення старих вкладок до неї.
+   Підключається ПІСЛЯ styles.css, тому перекриває жорстко прописані кольори Tailwind-знімка. */
+:root {
+    --bg: #0B0D12; --pan: #12151D; --pan2: #0F1218; --ln: #222838;
+    --tx: #E6E9F0; --mu: #8A93A6;
+    --ac: #22D3EE; --ac2: #8B5CF6; --up: #34D399; --dn: #FB7185; --warn: #FBBF24; --actx: #06111A;
+    --glow1: rgba(34, 211, 238, .10); --glow2: rgba(139, 92, 246, .12);
+    --r: 16px;
+    color-scheme: dark;
+}
+
+body {
+    background: var(--bg);
+    background-image: radial-gradient(900px 500px at 10% -10%, var(--glow1), transparent 60%),
+                      radial-gradient(800px 400px at 100% 0%, var(--glow2), transparent 60%);
+    background-attachment: fixed;
+    color: var(--tx);
+    font: 400 15px/1.5 Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    max-width: 1280px; margin: 0 auto;
+}
+h1 { font-family: 'Space Grotesk', Inter, system-ui, sans-serif; letter-spacing: .04em; }
+.font-mono, .mono, .num { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+
+/* --- компоненти старих вкладок у стилі Orbix --- */
+.panel, .card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0)), var(--pan);
+    border: 1px solid var(--ln); border-radius: var(--r);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 10px 30px -20px rgba(0, 0, 0, .8);
+}
+.gold-btn {
+    background: linear-gradient(135deg, var(--ac), color-mix(in srgb, var(--ac) 70%, var(--ac2)));
+    color: var(--actx); font-weight: 600; box-shadow: 0 6px 18px -8px var(--ac);
+}
+.veles-btn { background: linear-gradient(135deg, var(--up), color-mix(in srgb, var(--up) 65%, var(--ac))); color: var(--actx); font-weight: 600; }
+.layer-on { border-color: var(--ac) !important; background-color: color-mix(in srgb, var(--ac) 16%, transparent) !important; color: var(--ac) !important; }
+.bt-chip-on { border-color: var(--up) !important; background-color: color-mix(in srgb, var(--up) 16%, transparent) !important; color: var(--up) !important; box-shadow: none; }
+
+/* жорстко прописані фони Tailwind-знімка → токени */
+.bg-\[\#131722\] { background-color: var(--pan); }
+.bg-\[\#0b0e14\], .bg-\[\#090c10\] { background-color: var(--pan2); }
+.bg-\[\#1a202c\], .bg-\[\#1e2433\] { background-color: color-mix(in srgb, var(--ln) 70%, var(--pan)); }
+.border-\[\#1e2433\] { border-color: var(--ln); }
+.fullscreen-box { background: var(--bg) !important; }
+input, select, textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+/* прозорі нижні межі таблиць у темі */
+.divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) { border-color: var(--ln); }
+
+button, select, input { transition: border-color .15s, background-color .15s, transform .1s; }
+button:active { transform: scale(.98); }
+:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+@media (min-width: 640px) { nav.grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+
+/* --- вкладка «Скринер» (live) --- */
+.lv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.lv-top h2 { margin: 0; font: 600 16px 'Space Grotesk', Inter, sans-serif; }
+.lv-chip {
+    margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; border-radius: 99px; padding: 4px 10px;
+    border: 1px solid color-mix(in srgb, var(--st, var(--mu)) 45%, transparent);
+    background: color-mix(in srgb, var(--st, var(--mu)) 10%, transparent); color: var(--st, var(--mu));
+}
+.lv-chip[data-s="live"] { --st: var(--up); }
+.lv-chip[data-s="connecting"], .lv-chip[data-s="reconnecting"] { --st: var(--warn); }
+.lv-chip[data-s="error"] { --st: var(--dn); }
+.lv-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.lv-filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--mu); }
+.lv-filters input {
+    width: 100%; min-height: 40px; background: var(--pan2); border: 1px solid var(--ln); border-radius: 12px;
+    color: var(--tx); padding: 0 12px; font-size: 14px;
+}
+.lv-wrap { overflow-x: auto; border: 1px solid var(--ln); border-radius: 14px; background: var(--pan2); -webkit-overflow-scrolling: touch; }
+.lv-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.lv-table th {
+    position: sticky; top: 0; background: var(--pan); color: var(--mu); font: 600 11px Inter, sans-serif; letter-spacing: .06em;
+    text-transform: uppercase; text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--ln); cursor: pointer; user-select: none;
+}
+.lv-table th:first-child, .lv-table td:first-child { text-align: left; position: sticky; left: 0; background: var(--pan); z-index: 1; }
+.lv-table th[aria-sort] { color: var(--ac); }
+.lv-table td { text-align: right; padding: 9px 12px; border-bottom: 1px solid color-mix(in srgb, var(--ln) 60%, transparent); font-family: 'JetBrains Mono', monospace; }
+.lv-table tbody tr { cursor: pointer; transition: background-color .12s; }
+.lv-table tbody tr:hover { background: color-mix(in srgb, var(--ac) 7%, transparent); }
+.lv-table td:first-child { font: 600 13px Inter, sans-serif; color: var(--tx); }
+.lv-up { color: var(--up); } .lv-dn { color: var(--dn); } .lv-mu { color: var(--mu); }
+.lv-hot { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); border-radius: 6px; padding: 2px 6px; }
+.lv-note { color: var(--mu); font-size: 12px; margin: 10px 2px 0; }
+.lv-empty { padding: 28px 12px; text-align: center; color: var(--mu); }

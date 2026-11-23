@@ -164,6 +164,77 @@ async function run(name, fn, browser) {
         assert.equal(await page.evaluate(() => app.candles.length), 12);
     }, browser);
 
+
+    // --- вкладка «Скринер» (live): підроблені WebSocket і fapi REST ---
+    async function liveSetup(page) {
+        await page.addInitScript(() => {
+            window.__sockets = [];
+            window.WebSocket = class {
+                constructor(url) { this.url = url; window.__sockets.push(this); setTimeout(() => this.onopen && this.onopen(), 0); }
+                close() {}
+            };
+        });
+        const now = Math.floor(Date.now() / 60000) * 60000;
+        const fk = (spikeLast) => Array.from({ length: 130 }, (_, i) => {
+            const t = now - (129 - i) * 60000, close = 100 + Math.sin(i / 5);
+            return [t, close, close + 0.4, close - 0.4, close, 10, t + 59999, i >= 125 ? spikeLast : 1000];
+        });
+        await page.route('**/fapi/v1/**', route => {
+            const u = new URL(route.request().url());
+            const tk = (symbol, q) => ({ symbol, lastPrice: '100', priceChangePercent: '1.5', quoteVolume: String(q) });
+            const body = u.pathname.endsWith('/ticker/24hr')
+                ? [tk('BTCUSDT', 9e9), tk('ETHUSDT', 5e9), tk('1000PEPEUSDT', 1e9), tk('SOLUSDT_250101', 9e10)]
+                : fk(u.searchParams.get('symbol') === 'ETHUSDT' ? 9000 : 1000);
+            return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+        });
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.goto(PAGE); await page.waitForTimeout(500);
+        await page.evaluate(() => { window.__sockets[0].onopen(); window.liveFeed.tick(); });
+    }
+
+    await run('live tab is the default and renders metrics from feed data', async page => {
+        await liveSetup(page);
+        assert.equal(await page.$eval('#view-live', e => e.classList.contains('hidden')), false);
+        assert.equal(await page.$eval('#view-terminal', e => e.classList.contains('hidden')), true);
+        assert.equal((await page.$$('#lvBody tr[data-sym]')).length, 3);                 // без SOLUSDT_250101
+        assert.equal(await page.textContent('#lvStatus'), 'Наживо');
+        const eth = await page.$eval('#lvBody tr[data-sym="ETHUSDT"]', tr => tr.textContent.replace(/\s+/g, ' '));
+        assert.match(eth, /×\d/);                                                       // сплеск обсягу порахований
+        assert.match(eth, /\+1\.50%/);                                                  // 24г зміна з тікера
+    }, browser);
+
+    await run('live tab: header click sorts, filters narrow the list, settings persist', async page => {
+        await liveSetup(page);
+        await page.click('#lvHead th[data-k="spike"]');
+        assert.equal(await page.$eval('#lvBody tr', tr => tr.dataset.sym), 'ETHUSDT');   // найбільший сплеск — зверху
+        await page.fill('#lvSearch', 'eth');
+        assert.equal((await page.$$('#lvBody tr[data-sym]')).length, 1);
+        await page.reload(); await page.waitForTimeout(300);
+        assert.equal(await page.inputValue('#lvSearch'), 'eth');                         // збереглося в localStorage
+    }, browser);
+
+    await run('live tab: clicking a row opens the terminal on that symbol (even futures-only)', async page => {
+        await liveSetup(page);
+        await page.click('#lvBody tr[data-sym="1000PEPEUSDT"]');
+        assert.equal(await page.evaluate(() => app.sym), '1000PEPEUSDT');
+        assert.equal(await page.inputValue('#coinSelect'), '1000PEPEUSDT');
+        assert.equal(await page.$eval('#view-terminal', e => e.classList.contains('hidden')), false);
+    }, browser);
+
+    await run('live tab: kline websocket message updates the row', async page => {
+        await liveSetup(page);
+        const before = await page.$eval('#lvBody tr[data-sym="BTCUSDT"] td:nth-child(2)', e => e.textContent);
+        await page.evaluate(() => {
+            const k = Math.floor(Date.now() / 60000) * 60000;
+            const data = { s: 'BTCUSDT', k: { t: k, o: '100', h: '260', l: '100', c: '250', v: '1', q: '5000' } };
+            window.__sockets[0].onmessage({ data: JSON.stringify({ stream: 'btcusdt@kline_1m', data }) });
+            window.liveFeed.tick();
+        });
+        const after = await page.$eval('#lvBody tr[data-sym="BTCUSDT"] td:nth-child(2)', e => e.textContent);
+        assert.notEqual(before, after);
+        assert.match(after, /250/);
+    }, browser);
+
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)
     const server = http.createServer((req, res) => {
         const f = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url.split('?')[0]);
