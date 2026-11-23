@@ -28,20 +28,7 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2">
-            <select id="coinSelect" onchange="window.changeSymbol(this.value)" class="bg-[#1a202c] text-white font-bold text-xs px-3 py-2 rounded-lg border border-slate-700 outline-none">
-                <option value="BTCUSDT">BTC / USDT</option>
-                <option value="ETHUSDT">ETH / USDT</option>
-                <option value="SOLUSDT">SOL / USDT</option>
-                <option value="BNBUSDT">BNB / USDT</option>
-                <option value="XRPUSDT">XRP / USDT</option>
-                <option value="DOGEUSDT">DOGE / USDT</option>
-                <option value="TONUSDT">TON / USDT</option>
-                <option value="ADAUSDT">ADA / USDT</option>
-                <option value="AVAXUSDT">AVAX / USDT</option>
-                <option value="LINKUSDT">LINK / USDT</option>
-                <option value="SUIUSDT">SUI / USDT</option>
-                <option value="PEPEUSDT">PEPE / USDT</option>
-            </select>
+            <select id="coinSelect" onchange="window.changeSymbol(this.value)" class="bg-[#1a202c] text-white font-bold text-xs px-3 py-2 rounded-lg border border-slate-700 outline-none"></select>
 
             <div class="flex flex-wrap bg-[#1a202c] p-1 rounded-lg border border-slate-700 gap-0.5">
                 <button onclick="window.changeTF('15m','15',this)" class="tf-b px-2 py-1 rounded text-xs font-bold text-slate-400">15m</button>
@@ -53,6 +40,7 @@
             </div>
 
             <div class="flex items-center gap-1.5">
+                <span id="demoBadge" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">⚠ ДЕМО-ДАНІ</span>
                 <span id="activeBotHeaderBadge" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold animate-pulse">
                     🤖 Бот Активний
                 </span>
@@ -184,11 +172,11 @@
                 <div class="panel p-3.5 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
                         <div>
-                            <h2 class="font-extrabold text-sm sm:text-base text-white">🔌 Підключення до Топ-10 Крипто-Бірж (API Прив'язка)</h2>
-                            <p class="text-[11px] text-slate-400">Підтримка Spot та Futures API з підписом HMAC-SHA256 або безпечний Demo-режим</p>
+                            <h2 class="font-extrabold text-sm sm:text-base text-white">🔌 Біржа (Топ-10) — режим симуляції</h2>
+                            <p class="text-[11px] text-slate-400">Ордери на біржу не відправляються. Ціни та свічки — публічний API Binance.</p>
                         </div>
                         <span id="apiConnBadge" class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
-                            ● Binance Futures (Готово)
+                            ● Симуляція • Binance
                         </span>
                     </div>
 
@@ -209,13 +197,6 @@
                     <!-- Поля API ключів та Режим -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
                         <div>
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Режим виконання ордерів</label>
-                            <select id="botExecMode" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-emerald-400 text-xs font-bold p-2 rounded border border-slate-700">
-                                <option value="paper">🧪 Paper / Demo (Без ризику)</option>
-                                <option value="live">🔥 Real API (Live Торгівля)</option>
-                            </select>
-                        </div>
-                        <div>
                             <label class="text-[10px] text-slate-400 font-bold block mb-1">Ринок та Маржа</label>
                             <select id="botMarketType" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
                                 <option value="futures_isolated">Futures USDT-M (Ізольована)</option>
@@ -227,16 +208,10 @@
                             <label class="text-[10px] text-slate-400 font-bold block mb-1">Комісія біржі (%)</label>
                             <input type="number" id="botExchangeFee" value="0.05" step="0.01" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
                         </div>
-                        <input id="apiKeyInput" type="text" placeholder="API Key обраної біржі" class="bg-[#131722] text-xs p-2 rounded border border-slate-700 text-white">
-                        <input id="apiSecretInput" type="password" placeholder="API Secret Key (HMAC-SHA256)" class="bg-[#131722] text-xs p-2 rounded border border-slate-700 text-white">
-                        <input id="apiPassInput" type="password" placeholder="Passphrase (для OKX / Bitget / KuCoin)" class="bg-[#131722] text-xs p-2 rounded border border-slate-700 text-white">
                     </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <button onclick="window.verifyExchangeApi()" class="bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold">
-                            🔐 Перевірити API-ключі та Ping біржі
-                        </button>
-                        <span id="apiVerifyStatus" class="text-[11px] text-slate-400 font-mono">Endpoint: wss://fstream.binance.com (Latency: 28ms)</span>
+                        <span id="apiVerifyStatus" class="text-[11px] text-slate-400 font-mono">Режим: симуляція. Реальна торгівля потребує серверної частини з безпечним зберіганням ключів.</span>
                     </div>
                 </div>
 
@@ -319,7 +294,7 @@
                     <!-- Кнопки дій Бота -->
                     <div class="flex flex-wrap gap-2 pt-1">
                         <button onclick="window.toggleBotActiveState()" id="btnStartBot" class="veles-btn px-4 py-2.5 rounded-xl text-xs shadow-lg active:scale-95 transition flex items-center gap-1.5">
-                            <span>🚀 ЗАПУСТИТИ БОТА НА БІРЖІ</span>
+                            <span>🚀 ЗАПУСТИТИ СИМУЛЯЦІЮ</span>
                         </button>
                         <button onclick="window.openTab('backtest',document.getElementById('nav-backtest'))" class="gold-btn px-4 py-2.5 rounded-xl text-xs shadow-md active:scale-95 transition">
                             🧪 Протестувати цю сітку в Бектестері
@@ -456,7 +431,7 @@
                 <h2 class="font-extrabold text-sm sm:text-base text-white">🧪 Veles-Бектестер (DCA-Сітка Усереднень + Комбо-Фільтри Старту)</h2>
                 <p class="text-[11px] text-slate-400">Перевірка роботи сіткового бота Veles та комбінацій з 14 видів аналізу (Net Profit, Комісія, MAE/MFE, Макс. коліно сітки)</p>
             </div>
-            <span id="btCoinBadge" class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-mono text-xs font-bold">BTCUSDT • 1H (240 свічок)</span>
+            <span id="btCoinBadge" class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-mono text-xs font-bold">BTCUSDT • 1H (1000 свічок)</span>
         </div>
 
         <!-- Швидкі пресети комбінацій -->
@@ -465,7 +440,7 @@
             <button onclick="window.applyBtPreset(['smc','fib','rsi'],'synergy2')" class="px-2.5 py-1 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">🔥 SMC + Фібо + RSI</button>
             <button onclick="window.applyBtPreset(['ta','vwap','macd'],'synergy2')" class="px-2.5 py-1 rounded bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[11px] font-bold">📐 Фігури ТА + VWAP + MACD</button>
             <button onclick="window.applyBtPreset(['sr','pa','bb','stoch'],'synergy2')" class="px-2.5 py-1 rounded bg-purple-500/15 border border-purple-500/40 text-purple-300 text-[11px] font-bold">🎯 Рівні П/С + Свічки + Bollinger</button>
-            <button onclick="window.applyBtPreset(['st','ema','ichi'],'synergy2')" class="px-2.5 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] font-bold">📈 SuperTrend + EMA + Ішімоку</button>
+            <button onclick="window.applyBtPreset(['st','ema','ichi'],'synergy2')" class="px-2.5 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] font-bold">📈 Тренд + EMA + Ішімоку</button>
             <button onclick="window.applyBtPreset(['smc','sr','fib','pa','ta','liq','st','rsi','macd','bb','ema','ichi','vwap','stoch'],'synergy3')" class="px-2.5 py-1 rounded bg-slate-800 text-white text-[11px] font-bold">✅ Усі 14 модулів (Мін. 3 збіги)</button>
         </div>
 
@@ -487,7 +462,7 @@
                 <span class="text-xs font-extrabold text-cyan-400 uppercase block">2. Індикатори &amp; Стратегії TradingView (Фільтри входу)</span>
                 <div class="flex flex-wrap gap-1.5">
                     <button data-mod="rsi" onclick="window.toggleBtMod('rsi')" class="bt-chip bt-chip-on px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-bold transition">📊 RSI (14) Розворот</button>
-                    <button data-mod="st" onclick="window.toggleBtMod('st')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">📈 SuperTrend (ATR)</button>
+                    <button data-mod="st" onclick="window.toggleBtMod('st')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">📈 Тренд (Close/EMA20)</button>
                     <button data-mod="macd" onclick="window.toggleBtMod('macd')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">⚡ MACD Кросовер</button>
                     <button data-mod="bb" onclick="window.toggleBtMod('bb')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">💥 Bollinger Squeeze</button>
                     <button data-mod="ema" onclick="window.toggleBtMod('ema')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🌊 EMA Ribbon (20/50)</button>

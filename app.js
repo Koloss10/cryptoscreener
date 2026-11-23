@@ -5,29 +5,36 @@
         const COINS = ["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT","TONUSDT","ADAUSDT","AVAXUSDT","LINKUSDT","SUIUSDT","PEPEUSDT","NEARUSDT","APTUSDT","LTCUSDT","ARBUSDT","OPUSDT","INJUSDT","DOTUSDT","FETUSDT"];
         const BASE_PRICES = { BTCUSDT:68400, ETHUSDT:2640, SOLUSDT:158, BNBUSDT:595, XRPUSDT:0.55, DOGEUSDT:0.125, TONUSDT:5.25, ADAUSDT:0.36, AVAXUSDT:27.8, LINKUSDT:11.6, SUIUSDT:2.05, PEPEUSDT:0.00001, NEARUSDT:4.9, APTUSDT:9.8, LTCUSDT:71, ARBUSDT:0.56, OPUSDT:1.72, INJUSDT:21.4, DOTUSDT:4.45, FETUSDT:1.42 };
 
+        const CANDLE_LIMIT = 1000;            // макс. для Binance klines; більше історії = змістовніший бектест
+        const FETCH_TIMEOUT_MS = 6000;
+        const TF_MS = { '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000, '1M': 2592000000 };
+        const BINANCE_BASES = ['https://data-api.binance.vision/api/v3', 'https://api.binance.com/api/v3'];
+        const TIME_EXIT_BARS = 16;            // вихід по часу в бектесті
+        const LIQ_MARGIN_FRACTION = 0.9;      // ліквідація при втраті 90% маржі
+
         const EXCHANGES_META = {
-            'Binance': { endpoint: 'https://fapi.binance.com', latency: '24ms' },
-            'Bybit':   { endpoint: 'https://api.bybit.com/v5', latency: '31ms' },
-            'OKX':     { endpoint: 'https://www.okx.com/api/v5', latency: '29ms' },
-            'Bitget':  { endpoint: 'https://api.bitget.com/api/v2', latency: '38ms' },
-            'BingX':   { endpoint: 'https://open-api.bingx.com', latency: '44ms' },
-            'Gate.io': { endpoint: 'https://api.gateio.ws/api/v4', latency: '41ms' },
-            'KuCoin':  { endpoint: 'https://api-futures.kucoin.com', latency: '46ms' },
-            'MEXC':    { endpoint: 'https://contract.mexc.com/api/v1', latency: '39ms' },
-            'HTX':     { endpoint: 'https://api.hbdm.com', latency: '52ms' },
-            'Kraken':  { endpoint: 'https://futures.kraken.com/derivatives', latency: '35ms' }
+            'Binance': { endpoint: 'https://fapi.binance.com' },
+            'Bybit':   { endpoint: 'https://api.bybit.com/v5' },
+            'OKX':     { endpoint: 'https://www.okx.com/api/v5' },
+            'Bitget':  { endpoint: 'https://api.bitget.com/api/v2' },
+            'BingX':   { endpoint: 'https://open-api.bingx.com' },
+            'Gate.io': { endpoint: 'https://api.gateio.ws/api/v4' },
+            'KuCoin':  { endpoint: 'https://api-futures.kucoin.com' },
+            'MEXC':    { endpoint: 'https://contract.mexc.com/api/v1' },
+            'HTX':     { endpoint: 'https://api.hbdm.com' },
+            'Kraken':  { endpoint: 'https://futures.kraken.com/derivatives' }
         };
 
         const MOD_NAMES = {
             smc: '🧠 SMC (OB/FVG)', sr: '🎯 Рівні П/С', fib: '🌀 Фібо 0.618', pa: '🕯️ Свічки PA',
-            ta: '📐 Фігури ТА', liq: '🧲 Ліквідність', rsi: '📊 RSI(14)', st: '📈 SuperTrend',
+            ta: '📐 Фігури ТА', liq: '🧲 Ліквідність', rsi: '📊 RSI(14)', st: '📈 Тренд EMA20',
             macd: '⚡ MACD', bb: '💥 Bollinger', ema: '🌊 EMA 20/50', ichi: '☁️ Ішімоку',
-            vwap: '💎 VWAP+Vol', stoch: '🎯 StochRSI'
+            vwap: '💎 VWAP+Vol', stoch: '🎯 Стохастик(9)'
         };
 
         window.app = {
             sym: 'BTCUSDT', tf: '1h', tvTf: '60', mode: 'canvas',
-            candles: [], visibleBars: 55, panOffset: 0, isFetching: false,
+            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, isDemo: false, scrDemo: false,
             layers: { mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
             btMods: { smc: true, sr: true, fib: true, pa: false, ta: false, liq: false, rsi: true, st: false, macd: false, bb: false, ema: false, ichi: false, vwap: false, stoch: false },
             bot: {
@@ -66,23 +73,29 @@
             return Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 2 }).format(Number(n) || 0);
         };
 
+        // Збирає index.html + styles.css + app.js в один автономний .html (працює через http/https)
         window.downloadAppFile = function() {
-            try {
-                const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-                const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
+            const files = ['index.html', 'styles.css', 'app.js'];
+            Promise.all(files.map(f => fetch(f).then(r => {
+                if (!r.ok) throw new Error(f);
+                return r.text();
+            }))).then(([html, css, code]) => {
+                const out = html
+                    .replace('<link rel="stylesheet" href="styles.css">', () => `<style>\n${css}</style>`)
+                    .replace('<script src="app.js" defer></script>', () => `<script>\n${code}<\/script>`);
+                const url = URL.createObjectURL(new Blob([out], { type: 'text/html;charset=utf-8' }));
+                const a = document.createElement('a');
                 a.href = url;
-                a.download = "CryptoScreener_v6_VELES_EDITION.html";
+                a.download = 'CryptoScreener_v6_VELES_EDITION.html';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-            } catch (e) {}
+            }).catch(() => alert('Збереження працює, коли сторінку відкрито через http(s) (наприклад GitHub Pages), а не через file://.'));
         };
 
         // Генератор свічок, якщо пісочниця обмежує мережу
-        window.generateFallbackCandles = function(sym, count = 240) {
+        window.generateFallbackCandles = function(sym, count = CANDLE_LIMIT) {
             let seed = sym.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + app.tf.charCodeAt(0) * 37;
             const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
             let p = BASE_PRICES[sym] || 100;
@@ -92,47 +105,57 @@
             for (let i = 0; i < count; i++) {
                 const o = p;
                 const wave = Math.sin(i / 7) * p * stepPct * 0.65;
-                const move = (rand() - 0.488) * p * stepPct * 2.1 + wave;
+                const move = (rand() - 0.5) * p * stepPct * 2.1 + wave;
                 const c = Math.max(p * 0.1, o + move);
                 const h = Math.max(o, c) + rand() * p * stepPct * 1.25;
                 const l = Math.min(o, c) - rand() * p * stepPct * 1.25;
                 const v = (1000 + rand() * 5200) * (100 / Math.max(1, p));
-                arr[i] = { time: now - (count - i) * 3600000, open: o, high: h, low: l, close: c, vol: v };
+                arr[i] = { time: now - (count - i) * (TF_MS[app.tf] || 3600000), open: o, high: h, low: l, close: c, vol: v };
                 p = c;
             }
             return arr;
         };
 
-        // Проміс-запит без циклу for (0% ризику помилки OneCompiler 400ms)
+        // Запит до Binance із таймаутом; повертає null, якщо обидва хости недоступні
         window.fetchBinance = function(path) {
-            const url1 = 'https://data-api.binance.vision/api/v3' + path;
-            const url2 = 'https://api.binance.com/api/v3' + path;
-            return fetch(url1)
-                .then(r => r.ok ? r.json() : Promise.reject())
-                .catch(() => fetch(url2).then(r => r.ok ? r.json() : null))
-                .catch(() => null);
+            const get = (base) => {
+                const ctl = new AbortController();
+                const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
+                return fetch(base + path, { signal: ctl.signal })
+                    .then(r => (r.ok ? r.json() : null))
+                    .catch(() => null)
+                    .finally(() => clearTimeout(timer));
+            };
+            return get(BINANCE_BASES[0]).then(d => (d !== null ? d : get(BINANCE_BASES[1])));
+        };
+
+        window.syncDemoBadge = function() {
+            document.getElementById('demoBadge').classList.toggle('hidden', !app.isDemo);
         };
 
         window.loadMainData = function() {
-            if (app.isFetching) return;
-            app.isFetching = true;
+            const reqId = ++app.reqId;   // нова зміна монети/ТФ робить попередні відповіді застарілими
 
             if (!app.candles.length) {
-                app.candles = window.generateFallbackCandles(app.sym, 240);
+                app.candles = window.generateFallbackCandles(app.sym, CANDLE_LIMIT);
+                app.isDemo = true;
+                window.syncDemoBadge();
                 window.updateBotGridPreview();
                 window.drawChart();
             }
 
             Promise.all([
-                window.fetchBinance(`/klines?symbol=${app.sym}&interval=${app.tf}&limit=240`),
+                window.fetchBinance(`/klines?symbol=${app.sym}&interval=${app.tf}&limit=${CANDLE_LIMIT}`),
                 window.fetchBinance(`/ticker/24hr?symbol=${app.sym}`),
                 window.fetchBinance(`/depth?symbol=${app.sym}&limit=30`)
             ]).then(([kRaw, ticker, depth]) => {
+                if (reqId !== app.reqId) return;   // застаріла відповідь
+
                 if (Array.isArray(kRaw) && kRaw.length > 30) {
                     app.candles = kRaw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], vol: +k[5] }));
-                } else if (!app.candles.length) {
-                    app.candles = window.generateFallbackCandles(app.sym, 240);
+                    app.isDemo = false;
                 }
+                window.syncDemoBadge();
 
                 const lastP = app.candles[app.candles.length - 1].close;
                 const chg = ticker && ticker.priceChangePercent ? parseFloat(ticker.priceChangePercent) : ((lastP - app.candles[0].open) / app.candles[0].open) * 100;
@@ -149,10 +172,7 @@
                 if (!document.getElementById('view-backtest').classList.contains('hidden')) {
                     window.executeBacktest();
                 }
-                app.isFetching = false;
-            }).catch(() => {
-                app.isFetching = false;
-            });
+            }).catch(err => console.error('loadMainData failed:', err));
         };
 
         // =========================================================================
@@ -163,36 +183,9 @@
             document.querySelectorAll('.ex-btn').forEach(b => b.className = "ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold");
             if (btn) btn.className = "ex-btn gold-btn py-1.5 px-2 rounded-lg text-xs";
 
-            const meta = EXCHANGES_META[exName] || EXCHANGES_META['Binance'];
-            document.getElementById('apiConnBadge').textContent = `● ${exName} API (Готово)`;
-            document.getElementById('apiVerifyStatus').textContent = `Endpoint: ${meta.endpoint} (Ping: ${meta.latency})`;
+            document.getElementById('apiConnBadge').textContent = `● Симуляція • ${exName}`;
             document.getElementById('bmPair').textContent = `${exName} • ${app.sym}`;
-            window.logBotEvent(`Обрано біржу ${exName} (${meta.endpoint}).`);
-        };
-
-        // Криптографічний підпис HMAC-SHA256 через Web Crypto API для реальних API-запитів
-        window.verifyExchangeApi = function() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            const secret = document.getElementById('apiSecretInput').value.trim();
-            const mode = document.getElementById('botExecMode').value;
-            const meta = EXCHANGES_META[app.bot.exchange];
-
-            if (mode === 'paper' || (!key && !secret)) {
-                document.getElementById('apiVerifyStatus').innerHTML = `<span class="text-emerald-400">✅ Демо-шлюз ${app.bot.exchange} активний (${meta.latency}). Можна запускати бота без ключів!</span>`;
-                window.beep(660);
-                return;
-            }
-
-            const enc = new TextEncoder();
-            const payload = `timestamp=${Date.now()}&symbol=${app.sym}`;
-            window.crypto.subtle.importKey("raw", enc.encode(secret || "veles_secret"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
-                .then(cryptoKey => window.crypto.subtle.sign("HMAC", cryptoKey, enc.encode(payload)))
-                .then(sigBuf => {
-                    const sigHex = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24);
-                    document.getElementById('apiVerifyStatus').innerHTML = `<span class="text-emerald-400">🔐 Ключ ${app.bot.exchange} верифіковано! HMAC-SHA256: ${sigHex}...</span>`;
-                    window.logBotEvent(`API-ключ для ${app.bot.exchange} підписано через SHA-256.`);
-                    window.beep(740);
-                });
+            window.logBotEvent(`Обрано біржу ${exName} (лише підпис у симуляції; ціни завжди з Binance).`);
         };
 
         window.applyVelesTemplate = function(tpl) {
@@ -324,21 +317,21 @@
 
             if (app.bot.active) {
                 app.bot.filledCount = 1;
-                btn.innerHTML = `<span>⏹ ЗУПИНИТИ БОТА (${app.bot.exchange})</span>`;
+                btn.innerHTML = `<span>⏹ ЗУПИНИТИ СИМУЛЯЦІЮ (${app.bot.exchange})</span>`;
                 btn.className = "bg-red-600 hover:bg-red-500 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-lg transition";
-                pill.textContent = "● В УГОДІ (СІТКА ВИСТАВЛЕНА)";
+                pill.textContent = "● СИМУЛЯЦІЯ: В УГОДІ";
                 pill.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold";
                 headerBadge.classList.remove('hidden');
-                window.logBotEvent(`🚀 Бот запущено на ${app.bot.exchange} (${app.sym}, ${app.bot.algo}). Виконано Ордер #1, виставлено ${app.bot.ordersCount - 1} лімітних ордерів усереднення.`);
+                window.logBotEvent(`🚀 [СИМУЛЯЦІЯ] Бот запущено на ${app.bot.exchange} (${app.sym}, ${app.bot.algo}). Виконано Ордер #1, виставлено ${app.bot.ordersCount - 1} лімітних ордерів усереднення.`);
                 window.beep(720);
             } else {
                 app.bot.filledCount = 0;
-                btn.innerHTML = `<span>🚀 ЗАПУСТИТИ БОТА НА БІРЖІ</span>`;
+                btn.innerHTML = `<span>🚀 ЗАПУСТИТИ СИМУЛЯЦІЮ</span>`;
                 btn.className = "veles-btn px-4 py-2.5 rounded-xl text-xs shadow-lg transition";
                 pill.textContent = "ЗУПИНЕНО";
                 pill.className = "px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold";
                 headerBadge.classList.add('hidden');
-                window.logBotEvent(`⏹ Роботу бота призупинено. Всі лімітні ордери сітки скасовано.`);
+                window.logBotEvent(`⏹ Симуляцію зупинено. Реальні ордери не відправлялись.`);
             }
             window.updateBotGridPreview();
             window.drawChart();
@@ -362,7 +355,7 @@
 
         window.botPanicSell = function() {
             if (!app.bot.active) return;
-            window.logBotEvent(`🚨 PANIC SELL: Позицію по ${app.sym} повністю закрито за ринковою ціною на ${app.bot.exchange}!`);
+            window.logBotEvent(`🚨 [СИМУЛЯЦІЯ] PANIC SELL: Позицію по ${app.sym} повністю закрито за ринковою ціною на ${app.bot.exchange}!`);
             window.beep(320);
             window.toggleBotActiveState();
         };
@@ -405,7 +398,9 @@
 
         window.executeBacktest = function() {
             if (!app.candles || app.candles.length < 40) {
-                app.candles = window.generateFallbackCandles(app.sym, 240);
+                app.candles = window.generateFallbackCandles(app.sym, CANDLE_LIMIT);
+                app.isDemo = true;
+                window.syncDemoBadge();
             }
 
             const cs = app.candles;
@@ -417,6 +412,7 @@
             const tpPct = Math.max(0.2, parseFloat(document.getElementById('btTp').value) || 1.6) / 100;
             const slPct = Math.max(0.2, parseFloat(document.getElementById('btSl').value) || 2.5) / 100;
             const feeRate = (app.bot.feePct || 0.05) / 100;
+            const lev = Math.max(1, app.bot.leverage || 1);
 
             document.getElementById('btCoinBadge').textContent = `${app.sym} • ${app.tf.toUpperCase()} (${n} свічок | Сітка Veles: ${gridMode==='dca'?app.bot.ordersCount+' орд.':'1 орд.'})`;
 
@@ -550,65 +546,68 @@
                 if (dirFilter === 'short' && sig === 'LONG') sig = null;
 
                 if (sig) {
-                    // Будуємо сітку ордерів Veles від ціни відкриття угоди
+                    // Сітка беремо з вкладки бота (calculateVelesGrid): ті самі indent/overlap/логарифм/мартингейл
                     const entry0 = c.close;
-                    const maxOrders = gridMode === 'dca' ? app.bot.ordersCount : 1;
-                    const overlap = app.bot.overlap / 100;
-                    const mart = app.bot.martingale / 100;
+                    const grid = app.bot.gridTable.length ? app.bot.gridTable : window.calculateVelesGrid(entry0).orders;
+                    const levels = gridMode === 'dca' ? grid : grid.slice(0, 1);
+                    const baseDrop = levels[0].dropPct;
+                    const levelPrice = (o) => entry0 * (1 + (sig === 'LONG' ? -1 : 1) * (o.dropPct - baseDrop) / 100);
 
                     let filledOrders = 1;
+                    let filledUsd = gridMode === 'dca' ? levels[0].usd : startDep * lev;
+                    let filledCoins = filledUsd / entry0;
                     let avgPrice = entry0;
-                    let totalWeight = 1;
                     let dealMaePct = 0;
 
-                    const lastGridPrice = sig === 'LONG' ? entry0 * (1 - overlap * 0.65) : entry0 * (1 + overlap * 0.65);
+                    const lastGridPrice = levelPrice(levels[levels.length - 1]);
                     const slPrice = sig === 'LONG' ? lastGridPrice * (1 - slPct) : lastGridPrice * (1 + slPct);
 
-                    let resType = 'ЧАС', exitPrice = cs[Math.min(n - 1, i + 16)].close, exitIdx = Math.min(n - 1, i + 16);
-                    const limitJ = Math.min(n - 1, i + 22);
+                    let resType = 'ЧАС', exitIdx = Math.min(n - 1, i + TIME_EXIT_BARS), exitPrice = cs[exitIdx].close;
+                    const limitJ = exitIdx;
 
                     for (let j = i + 1; j <= limitJ; j++) {
                         const bar = cs[j];
 
-                        // Перевірка добору усереднюючих ордерів сітки Veles
-                        if (gridMode === 'dca' && filledOrders < maxOrders) {
-                            const nextTriggerStep = (overlap * 0.55) * (filledOrders / maxOrders);
-                            const nextOrderPrice = sig === 'LONG' ? entry0 * (1 - nextTriggerStep) : entry0 * (1 + nextTriggerStep);
-
-                            if ((sig === 'LONG' && bar.low <= nextOrderPrice) || (sig === 'SHORT' && bar.high >= nextOrderPrice)) {
-                                const w = Math.pow(1 + mart, filledOrders);
-                                avgPrice = (avgPrice * totalWeight + nextOrderPrice * w) / (totalWeight + w);
-                                totalWeight += w;
-                                filledOrders++;
-                                if (filledOrders > maxGridOrderReached) maxGridOrderReached = filledOrders;
-                            }
+                        // Добір усереднюючих ордерів (глибокий гніт може зачепити кілька рівнів)
+                        while (filledOrders < levels.length) {
+                            const nextPrice = levelPrice(levels[filledOrders]);
+                            const hit = sig === 'LONG' ? bar.low <= nextPrice : bar.high >= nextPrice;
+                            if (!hit) break;
+                            filledUsd += levels[filledOrders].usd;
+                            filledCoins += levels[filledOrders].usd / nextPrice;
+                            avgPrice = filledUsd / filledCoins;
+                            filledOrders++;
+                            if (filledOrders > maxGridOrderReached) maxGridOrderReached = filledOrders;
                         }
 
-                        // Розрахунок поточного MAE % (максимального просідання в угоді)
+                        // MAE: максимальне просідання угоди від середньої ціни
                         const curAdv = sig === 'LONG' ? ((avgPrice - bar.low) / avgPrice) * 100 : ((bar.high - avgPrice) / avgPrice) * 100;
                         if (curAdv > dealMaePct) dealMaePct = curAdv;
                         if (dealMaePct > maxMaePct) maxMaePct = dealMaePct;
 
-                        // Динамічний Тейк-Профіт від нової усередненої ціни Veles
                         const dynamicTpPrice = sig === 'LONG' ? avgPrice * (1 + tpPct) : avgPrice * (1 - tpPct);
+                        const liqPrice = sig === 'LONG' ? avgPrice * (1 - LIQ_MARGIN_FRACTION / lev) : avgPrice * (1 + LIQ_MARGIN_FRACTION / lev);
+                        const liqFirst = sig === 'LONG' ? liqPrice > slPrice : liqPrice < slPrice;
+                        const stopPrice = liqFirst ? liqPrice : slPrice;
+                        const stopType = liqFirst ? 'LIQ' : 'SL';
 
+                        // Стоп перевіряється раніше за TP (консервативно для свічки, що зачепила обидва рівні)
                         if (sig === 'LONG') {
-                            if (bar.low <= slPrice) { resType = 'SL'; exitPrice = slPrice; exitIdx = j; break; }
+                            if (bar.low <= stopPrice) { resType = stopType; exitPrice = stopPrice; exitIdx = j; break; }
                             if (bar.high >= dynamicTpPrice) { resType = 'TP'; exitPrice = dynamicTpPrice; exitIdx = j; break; }
                         } else {
-                            if (bar.high >= slPrice) { resType = 'SL'; exitPrice = slPrice; exitIdx = j; break; }
+                            if (bar.high >= stopPrice) { resType = stopType; exitPrice = stopPrice; exitIdx = j; break; }
                             if (bar.low <= dynamicTpPrice) { resType = 'TP'; exitPrice = dynamicTpPrice; exitIdx = j; break; }
                         }
                     }
 
                     const rawPct = sig === 'LONG' ? (exitPrice - avgPrice) / avgPrice : (avgPrice - exitPrice) / avgPrice;
-                    const grossPct = resType === 'TP' ? tpPct : rawPct;
-                    // Чим більше ордерів сітки спрацювало, тим більший обсяг задіяно в угоді
-                    const sizeFactor = gridMode === 'dca' ? Math.min(2.2, 0.55 + filledOrders * 0.32) : 1.0;
-                    const feeUsd = balance * sizeFactor * feeRate * 2;
+                    // Розмір позиції = задіяна частина сітки (з урахуванням плеча), масштабована під поточний баланс
+                    const positionUsd = filledUsd * (balance / startDep);
+                    const feeUsd = positionUsd * feeRate * 2;
                     totalFeesPaid += feeUsd;
 
-                    const netPnlUsd = (balance * sizeFactor * grossPct) - feeUsd;
+                    const netPnlUsd = Math.max(-balance, positionUsd * rawPct - feeUsd);
                     balance += netPnlUsd;
                     equity.push(balance);
 
@@ -628,7 +627,7 @@
                         sig,
                         comboText: matched.map(m => MOD_NAMES[m]).join(' + '),
                         filledOrders,
-                        maxOrders,
+                        maxOrders: levels.length,
                         avgPrice,
                         exitPrice,
                         mae: dealMaePct.toFixed(2),
@@ -638,8 +637,16 @@
                         win: isWin
                     });
 
+                    if (balance <= 0) break;
                     i = Math.max(i + 2, exitIdx);
                 }
+            }
+
+            let peak = equity[0], maxDdPct = 0;
+            for (const e of equity) {
+                if (e > peak) peak = e;
+                const dd = peak > 0 ? ((peak - e) / peak) * 100 : 0;
+                if (dd > maxDdPct) maxDdPct = dd;
             }
 
             const total = trades.length;
@@ -654,8 +661,8 @@
                 <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Угоди / Winrate</div><b class="text-sm text-white">${total} <span class="text-emerald-400">(${wr}%)</span></b></div>
                 <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Комісія біржі</div><b class="text-sm text-slate-300">-$${totalFeesPaid.toFixed(2)}</b></div>
                 <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Макс. ордер сітки</div><b class="text-sm text-cyan-400">${maxGridOrderReached} з ${gridMode==='dca'?app.bot.ordersCount:1}</b></div>
-                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Макс. просадка (%MAE)</div><b class="text-sm text-red-400">-${maxMaePct.toFixed(2)}%</b></div>
-                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Рек. баланс (2×MAE)</div><b class="text-sm text-amber-400">$${(startDep * (1 + (maxMaePct*2)/100)).toFixed(0)}</b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Макс. MAE угоди</div><b class="text-sm text-red-400">-${maxMaePct.toFixed(2)}%</b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Макс. просадка капіталу</div><b class="text-sm text-red-400">-${maxDdPct.toFixed(2)}%</b></div>
             `;
 
             document.getElementById('btModuleStats').innerHTML = activeMods.map(m => {
@@ -966,7 +973,8 @@
 
         window.scanTop20 = function() {
             window.fetchBinance('/ticker/24hr').then(all => {
-                if (Array.isArray(all) && all.length) {
+                app.scrDemo = !(Array.isArray(all) && all.length);
+                if (!app.scrDemo) {
                     app.scrList = COINS.map(s => all.find(x => x.symbol === s)).filter(Boolean).map(t => ({
                         sym: t.symbol, p: +t.lastPrice, chg: +t.priceChangePercent, vol: +t.quoteVolume,
                         pat: Math.abs(+t.priceChangePercent) > 2.5 ? '📐 Пробій прапора / Трикутника' : '🕯️ Пін-бар біля рівня П/С',
@@ -996,7 +1004,8 @@
             if (app.scrFilter === 'pat') list = list.filter(x => x.pat.includes('📐'));
             if (app.scrFilter === 'smc') list = list.filter(x => x.smc.includes('🟢'));
 
-            document.getElementById('scrBody').innerHTML = list.map(x => `
+            const demoRow = app.scrDemo ? '<tr><td colspan="6" class="p-2 text-amber-300 font-bold">⚠ ДЕМО-ДАНІ: Binance недоступний</td></tr>' : '';
+            document.getElementById('scrBody').innerHTML = demoRow + list.map(x => `
                 <tr>
                     <td class="p-2 font-bold text-white">${x.sym}</td>
                     <td class="p-2 font-mono">$${fmt(x.p)} <span class="${x.chg>=0?'text-emerald-400':'text-red-400'}">(${x.chg>=0?'+':''}${x.chg.toFixed(2)}%)</span></td>
@@ -1033,9 +1042,12 @@
             window.beep(680);
             const tok = document.getElementById('tgTok').value.trim(), cid = document.getElementById('tgCid').value.trim();
             if (tok && cid) {
-                fetch(`https://api.telegram.org/bot${tok}/sendMessage`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: cid, text: `🤖 Veles Bot (${app.bot.exchange}): ${app.sym} = ${document.getElementById('topPrice').textContent}`}) })
-                    .then(() => { document.getElementById('tgStatus').textContent = "✅ Звіт Бота доставлено в Telegram!"; })
-                    .catch(() => { document.getElementById('tgStatus').textContent = "⚠️ Перевірте Bot Token."; });
+                fetch(`https://api.telegram.org/bot${tok}/sendMessage`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: cid, text: `🤖 Veles (симуляція, ${app.bot.exchange}): ${app.sym} = ${document.getElementById('topPrice').textContent}`}) })
+                    .then(r => r.json().catch(() => ({})).then(body => {
+                        if (!r.ok || body.ok === false) throw new Error(body.description || `HTTP ${r.status}`);
+                        document.getElementById('tgStatus').textContent = "✅ Повідомлення доставлено в Telegram!";
+                    }))
+                    .catch(err => { document.getElementById('tgStatus').textContent = `⚠️ Telegram: ${err.message}. Перевірте Token і Chat ID.`; });
             } else {
                 document.getElementById('tgStatus').textContent = "🔊 Звуковий сигнал протестовано!";
             }
@@ -1061,6 +1073,9 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
+            const sel = document.getElementById('coinSelect');
+            sel.innerHTML = COINS.map(s => `<option value="${s}">${s.replace('USDT', ' / USDT')}</option>`).join('');
+            sel.value = app.sym;
             window.loadMainData();
             setInterval(window.loadMainData, 7000);
         });
