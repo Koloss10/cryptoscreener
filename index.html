@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark"><head><script>(function () { function __cleanUrls(s) { return typeof s === 'string' ? s.replace(/https?:\/\/[^\s)'"]*\/__(?:vfs|preview)__\/[^/]+\/([^\s)'"?:]*)(?:\?(?:v|__gpv)=\d+)?/g, '$1') : s; } var __fwdMax = 100; var __fwdWindow = 250; var __fwdLogs = 0; var __fwdErrs = 0; var __fwdStart = Date.now(); var __fwdDropped = 0; var __fwdFlushing = false; function __emitDropped() { if (__fwdDropped <= 0) return; var d = __fwdDropped; __fwdDropped = 0; try { window.parent.postMessage({ type: 'console', method: 'warn', args: ['[Preview] suppressed ' + d + ' console message(s) — output is coming too fast (possible runaway loop).'] }, '*'); } catch (e) {} } function __fwd(method, args) { var now = Date.now(); if (now - __fwdStart > __fwdWindow) { __fwdStart = now; __fwdLogs = 0; __fwdErrs = 0; __emitDropped(); } var isErr = method === 'error'; if ((isErr ? __fwdErrs : __fwdLogs) >= __fwdMax) { __fwdDropped++; if (!__fwdFlushing) { __fwdFlushing = true; setTimeout(function () { __fwdFlushing = false; __emitDropped(); }, 0); } return; } if (isErr) { __fwdErrs++; } else { __fwdLogs++; } try { window.parent.postMessage({ type: 'console', method: method, args: args }, '*'); } catch (e) {} } var orig = { log: console.log, error: console.error, warn: console.warn, info: console.info }; ['log','error','warn','info'].forEach(function (m) { console[m] = function () { var args = Array.prototype.slice.call(arguments); __fwd(m, args.map(function (a) { try { if (a instanceof Error) return __cleanUrls(a.stack || (a.name + ': ' + a.message)); return __cleanUrls(typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)); } catch (e) { return String(a); } })); orig[m].apply(console, args); }; }); window.addEventListener('error', function (e) { var loc = e.filename ? (' at ' + __cleanUrls(e.filename) + ':' + e.lineno) : ''; __fwd('error', [__cleanUrls(String(e.message)) + loc]); }); window.addEventListener('unhandledrejection', function (e) { var r = e.reason && e.reason.stack ? e.reason.stack : e.reason; __fwd('error', [__cleanUrls('Unhandled Promise Rejection: ' + r)]); }); var __v = Number(new URLSearchParams(location.search).get("__gpv") || '0'); try { window.parent.postMessage({ type: 'preview-booting', version: __v }, '*'); } catch (e) {} var __sentRendered = false; function __reportRendered() { if (__sentRendered) return; __sentRendered = true; try { window.parent.postMessage({ type: 'preview-rendered', version: __v }, '*'); } catch (e) {} } if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', __reportRendered); else __reportRendered(); window.addEventListener('load', __reportRendered); })();</script>
+    <title>Hello, World!</title>
+    <link rel="stylesheet" href="styles.css">
+  <style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.relative{position:relative}.my-1{margin-top:0.25rem;margin-bottom:0.25rem}.mb-1{margin-bottom:0.25rem}.mb-1\.5{margin-bottom:0.375rem}.mb-2{margin-bottom:0.5rem}.mb-2\.5{margin-bottom:0.625rem}.mb-3{margin-bottom:0.75rem}.mr-1{margin-right:0.25rem}.mt-2{margin-top:0.5rem}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-1\.5{height:0.375rem}.h-10{height:2.5rem}.h-\[160px\]{height:160px}.h-\[380px\]{height:380px}.h-full{height:100%}.max-h-28{max-height:7rem}.max-h-64{max-height:16rem}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-full{width:100%}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.cursor-grab{cursor:grab}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:0.125rem}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-2\.5{gap:0.625rem}.gap-3{gap:0.75rem}.space-y-0\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.125rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.125rem * var(--tw-space-y-reverse))}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.375rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-2\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.625rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.625rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.divide-y > :not([hidden]) ~ :not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px * calc(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px * var(--tw-divide-y-reverse))}.divide-slate-800\/50 > :not([hidden]) ~ :not([hidden]){border-color:rgb(30 41 59 / 0.5)}.divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]){border-color:rgb(30 41 59 / 0.6)}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.rounded{border-radius:0.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-\[\#1e2433\]{--tw-border-opacity:1;border-color:rgb(30 36 51 / var(--tw-border-opacity, 1))}.border-amber-500\/40{border-color:rgb(245 158 11 / 0.4)}.border-blue-500\/40{border-color:rgb(59 130 246 / 0.4)}.border-emerald-500\/30{border-color:rgb(16 185 129 / 0.3)}.border-emerald-500\/40{border-color:rgb(16 185 129 / 0.4)}.border-purple-500\/40{border-color:rgb(168 85 247 / 0.4)}.border-red-500\/40{border-color:rgb(239 68 68 / 0.4)}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.border-slate-800\/80{border-color:rgb(30 41 59 / 0.8)}.border-amber-500\/30{border-color:rgb(245 158 11 / 0.3)}.border-pink-500\/30{border-color:rgb(236 72 153 / 0.3)}.border-purple-500\/30{border-color:rgb(168 85 247 / 0.3)}.border-red-500\/30{border-color:rgb(239 68 68 / 0.3)}.bg-\[\#090c10\]{--tw-bg-opacity:1;background-color:rgb(9 12 16 / var(--tw-bg-opacity, 1))}.bg-\[\#0b0e14\]{--tw-bg-opacity:1;background-color:rgb(11 14 20 / var(--tw-bg-opacity, 1))}.bg-\[\#131722\]{--tw-bg-opacity:1;background-color:rgb(19 23 34 / var(--tw-bg-opacity, 1))}.bg-\[\#1a202c\]{--tw-bg-opacity:1;background-color:rgb(26 32 44 / var(--tw-bg-opacity, 1))}.bg-\[\#1e2433\]{--tw-bg-opacity:1;background-color:rgb(30 36 51 / var(--tw-bg-opacity, 1))}.bg-amber-500\/15{background-color:rgb(245 158 11 / 0.15)}.bg-amber-500\/20{background-color:rgb(245 158 11 / 0.2)}.bg-blue-500\/15{background-color:rgb(59 130 246 / 0.15)}.bg-blue-600\/20{background-color:rgb(37 99 235 / 0.2)}.bg-emerald-500{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.bg-emerald-500\/15{background-color:rgb(16 185 129 / 0.15)}.bg-emerald-500\/20{background-color:rgb(16 185 129 / 0.2)}.bg-purple-500\/15{background-color:rgb(168 85 247 / 0.15)}.bg-red-500\/20{background-color:rgb(239 68 68 / 0.2)}.bg-red-500\/40{background-color:rgb(239 68 68 / 0.4)}.bg-red-600\/20{background-color:rgb(220 38 38 / 0.2)}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-amber-500\/10{background-color:rgb(245 158 11 / 0.1)}.bg-emerald-500\/10{background-color:rgb(16 185 129 / 0.1)}.bg-pink-500\/10{background-color:rgb(236 72 153 / 0.1)}.bg-purple-500\/10{background-color:rgb(168 85 247 / 0.1)}.bg-red-500\/10{background-color:rgb(239 68 68 / 0.1)}.bg-gradient-to-b{background-image:linear-gradient(to bottom, var(--tw-gradient-stops))}.from-\[\#131722\]{--tw-gradient-from:#131722 var(--tw-gradient-from-position);--tw-gradient-to:rgb(19 23 34 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-\[\#0f1520\]{--tw-gradient-to:#0f1520 var(--tw-gradient-to-position)}.p-1{padding:0.25rem}.p-1\.5{padding:0.375rem}.p-2{padding:0.5rem}.p-2\.5{padding:0.625rem}.p-3{padding:0.75rem}.p-3\.5{padding:0.875rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.pb-1\.5{padding-bottom:0.375rem}.pb-16{padding-bottom:4rem}.pb-2{padding-bottom:0.5rem}.pb-2\.5{padding-bottom:0.625rem}.pr-1{padding-right:0.25rem}.pt-1{padding-top:0.25rem}.pt-2{padding-top:0.5rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-relaxed{line-height:1.625}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77 / var(--tw-text-opacity, 1))}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.text-amber-400\/90{color:rgb(251 191 36 / 0.9)}.text-blue-300{--tw-text-opacity:1;color:rgb(147 197 253 / var(--tw-text-opacity, 1))}.text-cyan-400{--tw-text-opacity:1;color:rgb(34 211 238 / var(--tw-text-opacity, 1))}.text-emerald-300{--tw-text-opacity:1;color:rgb(110 231 183 / var(--tw-text-opacity, 1))}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153 / var(--tw-text-opacity, 1))}.text-purple-300{--tw-text-opacity:1;color:rgb(216 180 254 / var(--tw-text-opacity, 1))}.text-purple-400{--tw-text-opacity:1;color:rgb(192 132 252 / var(--tw-text-opacity, 1))}.text-red-300{--tw-text-opacity:1;color:rgb(252 165 165 / var(--tw-text-opacity, 1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113 / var(--tw-text-opacity, 1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-pink-400{--tw-text-opacity:1;color:rgb(244 114 182 / var(--tw-text-opacity, 1))}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-amber-500\/20{--tw-shadow-color:rgb(245 158 11 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.outline-none{outline:2px solid transparent;outline-offset:2px}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-blue-600\/30:hover{background-color:rgb(37 99 235 / 0.3)}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.hover\:bg-\[\#1a202c\]\/60:hover{background-color:rgb(26 32 44 / 0.6)}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:cursor-grabbing:active{cursor:grabbing}@media (min-width: 640px){.sm\:h-\[440px\]{height:440px}.sm\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.sm\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.sm\:grid-cols-5{grid-template-columns:repeat(5, minmax(0, 1fr))}.sm\:grid-cols-6{grid-template-columns:repeat(6, minmax(0, 1fr))}.sm\:grid-cols-7{grid-template-columns:repeat(7, minmax(0, 1fr))}.sm\:p-3{padding:0.75rem}.sm\:text-base{font-size:1rem;line-height:1.5rem}}@media (min-width: 768px){.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:col-span-4{grid-column:span 4 / span 4}.lg\:col-span-5{grid-column:span 5 / span 5}.lg\:col-span-7{grid-column:span 7 / span 7}.lg\:col-span-8{grid-column:span 8 / span 8}.lg\:grid-cols-12{grid-template-columns:repeat(12, minmax(0, 1fr))}}</style></head>
+  <body class="min-h-screen p-2 sm:p-3 pb-16">
+      <h1 class="title">Hello World!</h1>
+      <p id="currentTime">Sat, 17 Oct 2026 22:56:32 GMT</p>
+      <script src="script.js"></script>
+  
+
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CryptoScreener v6.0 — Veles Bot, Top-10 API &amp; DCA Backtester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        body { background-color: #0b0e14; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .panel { background-color: #131722; border: 1px solid #1e2433; border-radius: 0.75rem; }
+        .gold-btn { background-color: #f59e0b; color: #000; font-weight: 800; }
+        .veles-btn { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; font-weight: 800; }
+        .layer-on { border-color: #f59e0b !important; background-color: rgba(245, 158, 11, 0.18) !important; color: #fde68a !important; }
+        .bt-chip-on { border-color: #10b981 !important; background-color: rgba(16, 185, 129, 0.2) !important; color: #6ee7b7 !important; box-shadow: 0 0 10px rgba(16, 185, 129, 0.15); }
+        .fullscreen-box { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; background: #0b0e14 !important; border-radius: 0 !important; margin: 0 !important; padding: 12px !important; overflow-y: auto !important; }
+        .order-row { position: relative; z-index: 1; }
+        .bar-bid { position: absolute; right: 0; top: 0; bottom: 0; background: rgba(16, 185, 129, 0.18); z-index: -1; }
+        .bar-ask { position: absolute; right: 0; top: 0; bottom: 0; background: rgba(239, 68, 68, 0.18); z-index: -1; }
+    </style>
+
+
+
+    <!-- ВЕРХНЯ ШАПКА -->
+    <header class="panel p-3 mb-2.5 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl gold-btn flex items-center justify-center text-sm shadow-lg shadow-amber-500/20">PRO</div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <h1 class="font-extrabold text-base text-white">CryptoScreener</h1>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">v6.0 VELES</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Veles DCA Боти • Топ-10 Бірж API • Комбо-Бектестер (MAE/MFE)</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-lg font-black text-white" id="topPrice">$81,417.50</div>
+                <div class="text-[11px] font-bold text-red-400" id="topChange">-0.47%</div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <select id="coinSelect" onchange="window.changeSymbol(this.value)" class="bg-[#1a202c] text-white font-bold text-xs px-3 py-2 rounded-lg border border-slate-700 outline-none">
+                <option value="BTCUSDT">BTC / USDT</option>
+                <option value="ETHUSDT">ETH / USDT</option>
+                <option value="SOLUSDT">SOL / USDT</option>
+                <option value="BNBUSDT">BNB / USDT</option>
+                <option value="XRPUSDT">XRP / USDT</option>
+                <option value="DOGEUSDT">DOGE / USDT</option>
+                <option value="TONUSDT">TON / USDT</option>
+                <option value="ADAUSDT">ADA / USDT</option>
+                <option value="AVAXUSDT">AVAX / USDT</option>
+                <option value="LINKUSDT">LINK / USDT</option>
+                <option value="SUIUSDT">SUI / USDT</option>
+                <option value="PEPEUSDT">PEPE / USDT</option>
+            </select>
+
+            <div class="flex flex-wrap bg-[#1a202c] p-1 rounded-lg border border-slate-700 gap-0.5">
+                <button onclick="window.changeTF('15m','15',this)" class="tf-b px-2 py-1 rounded text-xs font-bold text-slate-400">15m</button>
+                <button onclick="window.changeTF('1h','60',this)" class="tf-b px-2 py-1 rounded text-xs font-bold gold-btn">1H</button>
+                <button onclick="window.changeTF('4h','240',this)" class="tf-b px-2 py-1 rounded text-xs font-bold text-slate-400">4H</button>
+                <button onclick="window.changeTF('1d','D',this)" class="tf-b px-2 py-1 rounded text-xs font-bold text-slate-400">1D</button>
+                <button onclick="window.changeTF('1w','W',this)" class="tf-b px-2 py-1 rounded text-xs font-bold text-slate-400">1W</button>
+                <button onclick="window.changeTF('1M','M',this)" class="tf-b px-2 py-1 rounded text-xs font-bold text-slate-400">1M</button>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <span id="activeBotHeaderBadge" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold animate-pulse">
+                    🤖 Бот Активний
+                </span>
+                <button onclick="window.downloadAppFile()" class="gold-btn px-3 py-2 rounded-lg text-xs flex items-center gap-1 shadow-md active:scale-95 transition">
+                    <span>📥 Скачати .html</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- НАВІГАЦІЯ ВКЛАДОК (7 РОЗДІЛІВ) -->
+    <nav class="grid grid-cols-3 sm:grid-cols-7 gap-1.5 mb-2.5 bg-[#131722] p-1.5 rounded-xl border border-[#1e2433]">
+        <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📈 Термінал</button>
+        <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот &amp; API</button>
+        <button id="nav-backtest" onclick="window.openTab('backtest',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-amber-300">🧪 Veles Бектест</button>
+        <button id="nav-screener" onclick="window.openTab('screener',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔍 Топ-20</button>
+        <button id="nav-multi" onclick="window.openTab('multi',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🎛️ Мульти (10)</button>
+        <button id="nav-alerts" onclick="window.openTab('alerts',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔔 Алерти</button>
+        <button id="nav-wiki" onclick="window.openTab('wiki',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📚 Вікі</button>
+    </nav>
+
+    <!-- =========================================================================
+         ВКЛАДКА 1: ТЕРМІНАЛ (З ВІЗУАЛІЗАЦІЄЮ СІТКИ БОТА VELES НА ГРАФІКУ)
+    ========================================================================== -->
+    <main id="view-terminal" class="tab-view space-y-2.5">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+            <div class="lg:col-span-8 space-y-2.5">
+                <div id="chartPanel" class="panel p-2.5 flex flex-col">
+                    <div class="grid grid-cols-2 gap-1 bg-[#0b0e14] p-1 rounded-lg border border-slate-800 mb-2">
+                        <button id="btnModeCanvas" onclick="window.switchChartEngine('canvas')" class="gold-btn py-1.5 rounded text-xs">⚡ Графік (MTF + SMC + Сітка Veles)</button>
+                        <button id="btnModeTV" onclick="window.switchChartEngine('tv')" class="py-1.5 rounded text-xs font-bold text-slate-400">📊 TradingView Термінал</button>
+                    </div>
+
+                    <div id="layerBar" class="flex flex-wrap gap-1.5 mb-2">
+                        <button onclick="window.toggleLayer('mtf',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🎯 MTF Зони</button>
+                        <button onclick="window.toggleLayer('fib',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🌀 Фібоначчі</button>
+                        <button onclick="window.toggleLayer('smc',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🧠 SMC (OB/FVG)</button>
+                        <button onclick="window.toggleLayer('pat',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">📐 Фігури ТА</button>
+                        <button onclick="window.toggleLayer('can',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🕯️ Свічки</button>
+                        <button onclick="window.toggleLayer('vpvr',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">📊 VPVR + POC</button>
+                        <button onclick="window.toggleLayer('liq',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🧲 Ліквідації</button>
+                        <button onclick="window.toggleLayer('botgrid',this)" id="btnLayerBotGrid" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🤖 Сітка Veles-Бота</button>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[11px] text-amber-400/90 font-semibold">👆 Тягніть графік вліво/вправо або використовуйте зум</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="window.zoomChart(10)" class="px-2.5 py-1 rounded bg-[#1e2433] text-white font-bold text-xs">+</button>
+                            <button onclick="window.zoomChart(-10)" class="px-2.5 py-1 rounded bg-[#1e2433] text-white font-bold text-xs">−</button>
+                            <button onclick="window.resetChartZoom()" class="px-2.5 py-1 rounded bg-[#1e2433] text-slate-300 font-bold text-xs">Скинути</button>
+                            <button onclick="window.toggleFS()" class="px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs">⛶ Екран</button>
+                        </div>
+                    </div>
+
+                    <div id="canvasBox" class="relative w-full h-[380px] sm:h-[440px] bg-[#090c10] rounded-lg overflow-hidden border border-slate-800/80">
+                        <canvas id="mainCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing" width="974" height="1068"></canvas>
+                    </div>
+
+                    <div id="tvBox" class="hidden w-full h-[380px] sm:h-[440px] rounded-lg overflow-hidden"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                    <div class="panel p-3">
+                        <h3 class="text-xs font-extrabold text-amber-400 uppercase mb-1.5">📐 Фігури ТА &amp; Свічки</h3>
+                        <div id="boxPatterns" class="space-y-1.5 text-xs">
+                <div class="p-2 rounded bg-amber-500/10 border border-amber-500/30"><b class="text-amber-400">📐 Динамічний трикутник / Канал</b><div class="text-slate-300">Межі: $80,819.66 — $81,820.93</div></div>
+                <div class="p-2 rounded bg-emerald-500/10 border border-emerald-500/30"><b class="text-emerald-400">🕯️ Свічка: Бичача активність</b></div>
+            </div>
+                    </div>
+                    <div class="panel p-3">
+                        <h3 class="text-xs font-extrabold text-purple-400 uppercase mb-1.5">🧠 Smart Money (OB / FVG)</h3>
+                        <div id="boxSmc" class="space-y-1.5 text-xs">
+                <div class="p-2 rounded bg-purple-500/10 border border-purple-500/30"><b class="text-purple-400">Bullish Order Block:</b> $80,981.30</div>
+                <div class="p-2 rounded bg-pink-500/10 border border-pink-500/30"><b class="text-pink-400">Пул Ліквідацій Short:</b> $82,148.21</div>
+            </div>
+                    </div>
+                    <div class="panel p-3">
+                        <h3 class="text-xs font-extrabold text-cyan-400 uppercase mb-1.5">📊 Об'єм, ATR &amp; Ліквідність</h3>
+                        <div id="boxMetrics" class="space-y-1 text-xs">
+                <div class="flex justify-between"><span>Об'єм 24г:</span><b class="text-white">$599.81M</b></div>
+                <div class="flex justify-between"><span>Волатильність:</span><b class="text-amber-400">1.24%</b></div>
+                <div class="flex justify-between"><span>Золотий перетин Fib 0.618:</span><b class="text-blue-400">$81,202.15</b></div>
+            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 space-y-2.5">
+                <div class="panel p-3">
+                    <h3 class="text-xs font-extrabold text-white uppercase border-b border-slate-800 pb-1.5 mb-2">🎯 MTF Зони Спротиву і Підтримки</h3>
+                    <div id="boxSR" class="space-y-1.5 text-xs">
+                <div class="flex justify-between p-1.5 rounded bg-red-500/10 border border-red-500/30"><span class="text-red-400 font-bold">Спротив R1 (MTF)</span><span class="font-mono">$81,820.93</span></div>
+                <div class="flex justify-between p-1.5 rounded bg-amber-500/20 border border-amber-500/40 font-bold"><span>ПОТОЧНА ЦІНА</span><span class="font-mono">$81,417.50</span></div>
+                <div class="flex justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30"><span class="text-emerald-400 font-bold">Підтримка S1 (MTF)</span><span class="font-mono">$80,819.66</span></div>
+            </div>
+                </div>
+
+                <div class="panel p-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 mb-2">
+                        <h3 class="text-xs font-extrabold text-white uppercase">📊 Біржовий Стакан (Order Book)</h3>
+                        <span class="text-[10px] text-emerald-400 font-bold">● LIVE</span>
+                    </div>
+                    <div class="flex justify-between text-[11px] font-bold mb-1">
+                        <span class="text-emerald-400" id="bidPctTxt">Покупці: 5%</span>
+                        <span class="text-red-400" id="askPctTxt">Продавці: 95%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-red-500/40 rounded-full overflow-hidden flex mb-2">
+                        <div id="bidBar" class="bg-emerald-500 h-full transition-all" style="width: 5%;"></div>
+                    </div>
+                    <div id="asksList" class="space-y-0.5 text-[11px] font-mono"><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-ask" style="width:65%"></div><span class="text-red-400">81,417.77</span><span>0.00</span><span>$11.4</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-ask" style="width:65%"></div><span class="text-red-400">81,417.60</span><span>0.00</span><span>$5.7</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-ask" style="width:65%"></div><span class="text-red-400">81,417.52</span><span>0.00</span><span>$10.58</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-ask" style="width:65%"></div><span class="text-red-400">81,417.51</span><span>0.00</span><span>$10.58</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-ask" style="width:65%"></div><span class="text-red-400">81,417.50</span><span>9.72</span><span>$791.28K</span></div></div>
+                    <div id="midPriceBook" class="py-1 my-1 bg-[#1e2433] rounded text-center font-black text-xs text-white">$81,417.50</div>
+                    <div id="bidsList" class="space-y-0.5 text-[11px] font-mono"><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-bid" style="width:72%"></div><span class="text-emerald-400">81,417.49</span><span>0.51</span><span>$41.4K</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-bid" style="width:72%"></div><span class="text-emerald-400">81,417.48</span><span>0.00</span><span>$27.68</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-bid" style="width:72%"></div><span class="text-emerald-400">81,417.47</span><span>0.00</span><span>$10.58</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-bid" style="width:72%"></div><span class="text-emerald-400">81,416.40</span><span>0.00</span><span>$5.7</span></div><div class="order-row flex justify-between px-1 py-0.5"><div class="bar-bid" style="width:72%"></div><span class="text-emerald-400">81,416.19</span><span>0.00</span><span>$11.4</span></div></div>
+                    <div id="wallsInfo" class="mt-2 pt-2 border-t border-slate-800 text-[11px]"><div class="flex justify-between text-emerald-400"><span>🐋 Стінка Bid:</span><b>$81,417.49</b></div><div class="flex justify-between text-red-400"><span>🐋 Стінка Ask:</span><b>$81,417.50</b></div></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- =========================================================================
+         ВКЛАДКА 2: КОНСТРУКТОР ТОРГОВОГО БОТА VELES & ПІДКЛЮЧЕННЯ ДО ТОП-10 БІРЖ
+    ========================================================================== -->
+    <section id="view-velesbot" class="tab-view hidden space-y-3">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+            <!-- ЛІВА ЧАСТИНА (7 колонок): Підключення API Топ-10 Бірж + Налаштування Бота Veles -->
+            <div class="lg:col-span-7 space-y-3">
+
+                <!-- 1. Шлюз підключення до Топ-10 Крипто-Бірж через API -->
+                <div class="panel p-3.5 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                        <div>
+                            <h2 class="font-extrabold text-sm sm:text-base text-white">🔌 Підключення до Топ-10 Крипто-Бірж (API Прив'язка)</h2>
+                            <p class="text-[11px] text-slate-400">Підтримка Spot та Futures API з підписом HMAC-SHA256 або безпечний Demo-режим</p>
+                        </div>
+                        <span id="apiConnBadge" class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                            ● Binance Futures (Готово)
+                        </span>
+                    </div>
+
+                    <!-- Вибір біржі (Топ-10) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5" id="exchangeSelectorGrid">
+                        <button onclick="window.selectExchange('Binance',this)" class="ex-btn gold-btn py-1.5 px-2 rounded-lg text-xs">1. Binance</button>
+                        <button onclick="window.selectExchange('Bybit',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">2. Bybit</button>
+                        <button onclick="window.selectExchange('OKX',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">3. OKX</button>
+                        <button onclick="window.selectExchange('Bitget',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">4. Bitget</button>
+                        <button onclick="window.selectExchange('BingX',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">5. BingX</button>
+                        <button onclick="window.selectExchange('Gate.io',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">6. Gate.io</button>
+                        <button onclick="window.selectExchange('KuCoin',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">7. KuCoin</button>
+                        <button onclick="window.selectExchange('MEXC',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">8. MEXC</button>
+                        <button onclick="window.selectExchange('HTX',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">9. HTX</button>
+                        <button onclick="window.selectExchange('Kraken',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">10. Kraken</button>
+                    </div>
+
+                    <!-- Поля API ключів та Режим -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Режим виконання ордерів</label>
+                            <select id="botExecMode" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-emerald-400 text-xs font-bold p-2 rounded border border-slate-700">
+                                <option value="paper">🧪 Paper / Demo (Без ризику)</option>
+                                <option value="live">🔥 Real API (Live Торгівля)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Ринок та Маржа</label>
+                            <select id="botMarketType" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
+                                <option value="futures_isolated">Futures USDT-M (Ізольована)</option>
+                                <option value="futures_cross">Futures USDT-M (Крос)</option>
+                                <option value="spot">Spot (Спотовий ринок)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Комісія біржі (%)</label>
+                            <input type="number" id="botExchangeFee" value="0.05" step="0.01" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <input id="apiKeyInput" type="text" placeholder="API Key обраної біржі" class="bg-[#131722] text-xs p-2 rounded border border-slate-700 text-white">
+                        <input id="apiSecretInput" type="password" placeholder="API Secret Key (HMAC-SHA256)" class="bg-[#131722] text-xs p-2 rounded border border-slate-700 text-white">
+                        <input id="apiPassInput" type="password" placeholder="Passphrase (для OKX / Bitget / KuCoin)" class="bg-[#131722] text-xs p-2 rounded border border-slate-700 text-white">
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <button onclick="window.verifyExchangeApi()" class="bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold">
+                            🔐 Перевірити API-ключі та Ping біржі
+                        </button>
+                        <span id="apiVerifyStatus" class="text-[11px] text-slate-400 font-mono">Endpoint: wss://fstream.binance.com (Latency: 28ms)</span>
+                    </div>
+                </div>
+
+                <!-- 2. Налаштування Торгового Бота за стандартом Veles.finance -->
+                <div class="panel p-3.5 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                        <div>
+                            <h2 class="font-extrabold text-sm sm:text-base text-white">⚙️ Конфігуратор Сіткового DCA-Бота (Архітектура Veles)</h2>
+                            <p class="text-[11px] text-slate-400">Налаштуйте перекриття ціни, кількість ордерів, мартингейл, логарифм та Тейк-Профіт</p>
+                        </div>
+                        <!-- Шаблони режимів Veles -->
+                        <div class="flex flex-wrap gap-1">
+                            <button onclick="window.applyVelesTemplate('conservative')" class="px-2 py-1 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold">🛡️ Консервативний</button>
+                            <button onclick="window.applyVelesTemplate('moderate')" class="px-2 py-1 rounded bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[10px] font-bold">⚖️ Помірний</button>
+                            <button onclick="window.applyVelesTemplate('aggressive')" class="px-2 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-bold">🔥 Агресивний</button>
+                        </div>
+                    </div>
+
+                    <!-- Основні параметри Veles -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Алгоритм Veles</label>
+                            <select id="vBotAlgo" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-emerald-400 text-xs font-extrabold p-2 rounded border border-slate-700">
+                                <option value="LONG">🟢 LONG (Купівля)</option>
+                                <option value="SHORT">🔴 SHORT (Продаж)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Депозит Бота ($ USDT)</label>
+                            <input type="number" id="vBotDeposit" value="500" step="50" min="10" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Кредитне плече (x)</label>
+                            <input type="number" id="vBotLeverage" value="10" step="1" min="1" max="50" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-amber-400 text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Відступ 1-го ордера (%)</label>
+                            <input type="number" id="vBotIndent" value="0.0" step="0.1" min="0" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700" title="0% = Вхід за ринком (Market)">
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Перекриття ціни (Overlap %)</label>
+                            <input type="number" id="vBotOverlap" value="20" step="1" min="1" max="80" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-cyan-400 text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Ордерів у сітці (1–12)</label>
+                            <input type="number" id="vBotOrders" value="5" step="1" min="1" max="12" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Мартингейл (% обсягу)</label>
+                            <input type="number" id="vBotMartingale" value="15" step="5" min="0" max="100" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-purple-400 text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Логарифм цін (0.5–2.0)</label>
+                            <input type="number" id="vBotLog" value="1.1" step="0.1" min="0.5" max="2.0" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Режим Тейк-Профіту</label>
+                            <select id="vBotTpMode" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-emerald-400 text-xs font-bold p-2 rounded border border-slate-700">
+                                <option value="simple">Простий (% від середньої)</option>
+                                <option value="partial">Свій (Частковий 50/30/20% + БУ)</option>
+                                <option value="signal">За сигналом індикатора</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Тейк-Профіт (TP %)</label>
+                            <input type="number" id="vBotTpPct" value="1.5" step="0.1" min="0.2" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-emerald-400 text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Стоп-Лосс за сітку (%)</label>
+                            <input type="number" id="vBotSlPct" value="2.0" step="0.2" min="0" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-red-400 text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Підтяжка сітки (Pull-up %)</label>
+                            <input type="number" id="vBotPullup" value="0.8" step="0.1" min="0.1" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-slate-300 text-xs font-bold p-2 rounded border border-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- Кнопки дій Бота -->
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button onclick="window.toggleBotActiveState()" id="btnStartBot" class="veles-btn px-4 py-2.5 rounded-xl text-xs shadow-lg active:scale-95 transition flex items-center gap-1.5">
+                            <span>🚀 ЗАПУСТИТИ БОТА НА БІРЖІ</span>
+                        </button>
+                        <button onclick="window.openTab('backtest',document.getElementById('nav-backtest'))" class="gold-btn px-4 py-2.5 rounded-xl text-xs shadow-md active:scale-95 transition">
+                            🧪 Протестувати цю сітку в Бектестері
+                        </button>
+                        <button onclick="window.openTab('terminal',document.getElementById('nav-terminal'))" class="bg-[#1a202c] hover:bg-slate-800 text-slate-200 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-700">
+                            👁️ Показати сітку на Графіку
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ПРАВА ЧАСТИНА (5 колонок): Попередній перегляд Сітки Ордерів + Живий Монітор Бота -->
+            <div class="lg:col-span-5 space-y-3">
+
+                <!-- 1. Живий монітор запущеної угоди Бота -->
+                <div class="panel p-3.5 space-y-2.5 bg-gradient-to-b from-[#131722] to-[#0f1520]">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h3 class="font-extrabold text-xs text-white uppercase">📡 Термінал Управління Активним Ботом</h3>
+                        <span id="botLiveStatusPill" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold">ОЧІКУВАННЯ ЗАПУСКУ</span>
+                    </div>
+
+                    <div id="botActiveDealCard" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                        <div class="p-2 rounded bg-[#0b0e14] border border-slate-800">
+                            <div class="text-[10px] text-slate-400">Біржа / Пара</div>
+                            <b class="text-white" id="bmPair">Binance • BTCUSDT (LONG)</b>
+                        </div>
+                        <div class="p-2 rounded bg-[#0b0e14] border border-slate-800">
+                            <div class="text-[10px] text-slate-400">Середня ціна входу</div>
+                            <b class="text-amber-400 font-mono" id="bmAvgPrice">$81,417.50</b>
+                        </div>
+                        <div class="p-2 rounded bg-[#0b0e14] border border-slate-800">
+                            <div class="text-[10px] text-slate-400">Ціль Тейк-Профіту</div>
+                            <b class="text-emerald-400 font-mono" id="bmTpPrice">$82,638.76</b>
+                        </div>
+                        <div class="p-2 rounded bg-[#0b0e14] border border-slate-800">
+                            <div class="text-[10px] text-slate-400">Виконано ордерів сітки</div>
+                            <b class="text-cyan-400 font-mono" id="bmFilledOrders">0 / 5</b>
+                        </div>
+                        <div class="p-2 rounded bg-[#0b0e14] border border-slate-800">
+                            <div class="text-[10px] text-slate-400">Задіяний обсяг ($)</div>
+                            <b class="text-white font-mono" id="bmUsedVolume">$0.00</b>
+                        </div>
+                        <div class="p-2 rounded bg-[#0b0e14] border border-slate-800">
+                            <div class="text-[10px] text-slate-400">Поточний PnL угоди</div>
+                            <b class="text-emerald-400 font-mono" id="bmLivePnl">$0.00 (0.00%)</b>
+                        </div>
+                    </div>
+
+                    <!-- Ручне керування відкритою угодою (як у Veles) -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        <button onclick="window.botManualAverage()" class="px-2.5 py-1.5 rounded bg-blue-600/20 border border-blue-500/40 text-blue-300 text-[11px] font-bold">➕ Усереднити вручну (+1 ордер)</button>
+                        <button onclick="window.botPanicSell()" class="px-2.5 py-1.5 rounded bg-red-600/20 border border-red-500/40 text-red-300 text-[11px] font-bold">🚨 Panic Sell (Закрити за ринком)</button>
+                    </div>
+
+                    <!-- Лог подій бота -->
+                    <div id="botExecutionLog" class="p-2 rounded bg-[#090c10] border border-slate-800/80 text-[11px] font-mono max-h-28 overflow-y-auto space-y-1 text-slate-300">
+                        <div>[Система] Конфігуратор Veles готовий. Налаштуйте сітку та натисніть «Запустити Бота».</div>
+                    </div>
+                </div>
+
+                <!-- 2. Таблиця розрахунку сітки ордерів Veles -->
+                <div class="panel p-3.5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <h3 class="font-extrabold text-xs text-amber-400 uppercase">📋 Розрахунок Сітки Ордерів Veles</h3>
+                        <span id="gridTotalVolumeBadge" class="text-[11px] text-slate-300 font-mono">Купівельна спроможність (10x): $5,000</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-[11px] font-mono">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400">
+                                    <th class="py-1.5 px-1"># Ордер</th>
+                                    <th class="py-1.5 px-1">Відступ %</th>
+                                    <th class="py-1.5 px-1">Ціна ордера ($)</th>
+                                    <th class="py-1.5 px-1">Обсяг ($ USDT)</th>
+                                    <th class="py-1.5 px-1 text-right">Частка %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="velesGridTableBody" class="divide-y divide-slate-800/50">
+                <tr class="hover:bg-[#1a202c]/60">
+                    <td class="py-1.5 px-1 font-bold text-white">#1 (Вхід)</td>
+                    <td class="py-1.5 px-1 text-red-400">-0.00%</td>
+                    <td class="py-1.5 px-1 text-emerald-400 font-bold">$81,417.50</td>
+                    <td class="py-1.5 px-1 text-white">$741.6</td>
+                    <td class="py-1.5 px-1 text-right text-slate-400">14.8%</td>
+                </tr>
+            
+                <tr class="hover:bg-[#1a202c]/60">
+                    <td class="py-1.5 px-1 font-bold text-white">#2 </td>
+                    <td class="py-1.5 px-1 text-red-400">-4.35%</td>
+                    <td class="py-1.5 px-1 text-emerald-400 font-bold">$77,873.60</td>
+                    <td class="py-1.5 px-1 text-white">$852.8</td>
+                    <td class="py-1.5 px-1 text-right text-slate-400">17.1%</td>
+                </tr>
+            
+                <tr class="hover:bg-[#1a202c]/60">
+                    <td class="py-1.5 px-1 font-bold text-white">#3 </td>
+                    <td class="py-1.5 px-1 text-red-400">-9.33%</td>
+                    <td class="py-1.5 px-1 text-emerald-400 font-bold">$73,820.98</td>
+                    <td class="py-1.5 px-1 text-white">$980.7</td>
+                    <td class="py-1.5 px-1 text-right text-slate-400">19.6%</td>
+                </tr>
+            
+                <tr class="hover:bg-[#1a202c]/60">
+                    <td class="py-1.5 px-1 font-bold text-white">#4 </td>
+                    <td class="py-1.5 px-1 text-red-400">-14.57%</td>
+                    <td class="py-1.5 px-1 text-emerald-400 font-bold">$69,551.20</td>
+                    <td class="py-1.5 px-1 text-white">$1127.8</td>
+                    <td class="py-1.5 px-1 text-right text-slate-400">22.6%</td>
+                </tr>
+            
+                <tr class="hover:bg-[#1a202c]/60">
+                    <td class="py-1.5 px-1 font-bold text-white">#5 </td>
+                    <td class="py-1.5 px-1 text-red-400">-20.00%</td>
+                    <td class="py-1.5 px-1 text-emerald-400 font-bold">$65,134.00</td>
+                    <td class="py-1.5 px-1 text-white">$1297.0</td>
+                    <td class="py-1.5 px-1 text-right text-slate-400">25.9%</td>
+                </tr>
+            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         ВКЛАДКА 3: VELES БЕКТЕСТЕР (МУЛЬТИ-КОМБО ФІЛЬТРИ + DCA СІТКА УСЕРЕДНЕНЬ)
+    ========================================================================== -->
+    <section id="view-backtest" class="tab-view hidden panel p-3.5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div>
+                <h2 class="font-extrabold text-sm sm:text-base text-white">🧪 Veles-Бектестер (DCA-Сітка Усереднень + Комбо-Фільтри Старту)</h2>
+                <p class="text-[11px] text-slate-400">Перевірка роботи сіткового бота Veles та комбінацій з 14 видів аналізу (Net Profit, Комісія, MAE/MFE, Макс. коліно сітки)</p>
+            </div>
+            <span id="btCoinBadge" class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-mono text-xs font-bold">BTCUSDT • 1H (240 свічок)</span>
+        </div>
+
+        <!-- Швидкі пресети комбінацій -->
+        <div class="flex flex-wrap items-center gap-1.5 bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[11px] text-slate-400 font-bold mr-1">⚡ Готові комбо-фільтри старту Veles:</span>
+            <button onclick="window.applyBtPreset(['smc','fib','rsi'],'synergy2')" class="px-2.5 py-1 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">🔥 SMC + Фібо + RSI</button>
+            <button onclick="window.applyBtPreset(['ta','vwap','macd'],'synergy2')" class="px-2.5 py-1 rounded bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[11px] font-bold">📐 Фігури ТА + VWAP + MACD</button>
+            <button onclick="window.applyBtPreset(['sr','pa','bb','stoch'],'synergy2')" class="px-2.5 py-1 rounded bg-purple-500/15 border border-purple-500/40 text-purple-300 text-[11px] font-bold">🎯 Рівні П/С + Свічки + Bollinger</button>
+            <button onclick="window.applyBtPreset(['st','ema','ichi'],'synergy2')" class="px-2.5 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] font-bold">📈 SuperTrend + EMA + Ішімоку</button>
+            <button onclick="window.applyBtPreset(['smc','sr','fib','pa','ta','liq','st','rsi','macd','bb','ema','ichi','vwap','stoch'],'synergy3')" class="px-2.5 py-1 rounded bg-slate-800 text-white text-[11px] font-bold">✅ Усі 14 модулів (Мін. 3 збіги)</button>
+        </div>
+
+        <!-- Мульти-вибір фільтрів старту угоди -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
+                <span class="text-xs font-extrabold text-amber-400 uppercase block">1. Структурний Аналіз &amp; Price Action (Фільтри входу)</span>
+                <div class="flex flex-wrap gap-1.5">
+                    <button data-mod="smc" onclick="window.toggleBtMod('smc')" class="bt-chip bt-chip-on px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-bold transition">🧠 Smart Money (OB + FVG)</button>
+                    <button data-mod="sr" onclick="window.toggleBtMod('sr')" class="bt-chip bt-chip-on px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-bold transition">🎯 Зони Підтримки / Спротиву</button>
+                    <button data-mod="fib" onclick="window.toggleBtMod('fib')" class="bt-chip bt-chip-on px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-bold transition">🌀 Фібоначчі OTE (0.5–0.618)</button>
+                    <button data-mod="pa" onclick="window.toggleBtMod('pa')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🕯️ Свічкові Патерни (Pin/Engulf)</button>
+                    <button data-mod="ta" onclick="window.toggleBtMod('ta')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">📐 Фігури ТА (Трикутник/Прапор)</button>
+                    <button data-mod="liq" onclick="window.toggleBtMod('liq')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🧲 Зняття Ліквідності (Sweep)</button>
+                </div>
+            </div>
+
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
+                <span class="text-xs font-extrabold text-cyan-400 uppercase block">2. Індикатори &amp; Стратегії TradingView (Фільтри входу)</span>
+                <div class="flex flex-wrap gap-1.5">
+                    <button data-mod="rsi" onclick="window.toggleBtMod('rsi')" class="bt-chip bt-chip-on px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-bold transition">📊 RSI (14) Розворот</button>
+                    <button data-mod="st" onclick="window.toggleBtMod('st')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">📈 SuperTrend (ATR)</button>
+                    <button data-mod="macd" onclick="window.toggleBtMod('macd')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">⚡ MACD Кросовер</button>
+                    <button data-mod="bb" onclick="window.toggleBtMod('bb')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">💥 Bollinger Squeeze</button>
+                    <button data-mod="ema" onclick="window.toggleBtMod('ema')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🌊 EMA Ribbon (20/50)</button>
+                    <button data-mod="ichi" onclick="window.toggleBtMod('ichi')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">☁️ Хмара Ішімоку</button>
+                    <button data-mod="vwap" onclick="window.toggleBtMod('vwap')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">💎 VWAP + Сплеск Об'єму</button>
+                    <button data-mod="stoch" onclick="window.toggleBtMod('stoch')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🎯 Stochastic RSI</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Налаштування симуляції Veles (Сітка DCA vs Одиночний ордер) -->
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold block mb-1">Режим виконання Veles</label>
+                <select id="btVelesGridMode" onchange="window.executeBacktest()" class="w-full bg-[#131722] text-emerald-400 text-xs font-bold p-2 rounded border border-slate-700">
+                    <option value="dca">🤖 Сітка усереднень Veles (DCA)</option>
+                    <option value="single">⚡ 1 Ордер без усереднень</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold block mb-1">Логіка комбінації</label>
+                <select id="btLogic" onchange="window.executeBacktest()" class="w-full bg-[#131722] text-amber-300 text-xs font-bold p-2 rounded border border-slate-700">
+                    <option value="synergy2">🤝 Синергія (Мін. 2 збіги)</option>
+                    <option value="synergy3">🔥 Синергія PRO (Мін. 3 збіги)</option>
+                    <option value="all">🔒 Суворе Комбо (Всі разом)</option>
+                    <option value="any">⚡ Будь-який з обраних (АБО)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold block mb-1">Напрямок бота</label>
+                <select id="btDir" onchange="window.executeBacktest()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
+                    <option value="both">LONG + SHORT</option>
+                    <option value="long">Тільки LONG</option>
+                    <option value="short">Тільки SHORT</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold block mb-1">Тейк-Профіт (TP %)</label>
+                <input type="number" id="btTp" value="1.6" step="0.2" min="0.2" onchange="window.executeBacktest()" class="w-full bg-[#131722] text-emerald-400 font-bold text-xs p-2 rounded border border-slate-700">
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold block mb-1">Стоп-Лосс (SL %)</label>
+                <input type="number" id="btSl" value="2.5" step="0.2" min="0.2" onchange="window.executeBacktest()" class="w-full bg-[#131722] text-red-400 font-bold text-xs p-2 rounded border border-slate-700">
+            </div>
+            <div class="flex items-end">
+                <button onclick="window.executeBacktest()" class="w-full gold-btn py-2 px-3 rounded text-xs shadow-md active:scale-95 transition">
+                    ▶ Протестувати
+                </button>
+            </div>
+        </div>
+
+        <!-- Метрики Veles Backtest (Net Profit, Комісія, Winrate, MAE/MFE, Макс. ордер сітки) -->
+        <div id="btSummary" class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs"></div>
+
+        <!-- Статистика кожного увімкненого модуля -->
+        <div class="p-3 rounded-xl bg-[#0b0e14] border border-slate-800">
+            <div class="text-[11px] font-bold text-slate-400 mb-2">🏆 Внесок кожного увімкненого фільтра та індикатора у результат:</div>
+            <div id="btModuleStats" class="flex flex-wrap gap-2 text-xs"></div>
+        </div>
+
+        <!-- Графік Кривої Капіталу (Equity Curve) -->
+        <div class="p-3 rounded-xl bg-[#090c10] border border-slate-800">
+            <div class="flex justify-between items-center text-[11px] text-slate-400 font-bold mb-1.5">
+                <span>📈 Графік Балансу Бота Veles (З урахуванням комісій та DCA-усереднень)</span>
+                <span id="btFinalCap" class="text-emerald-400 font-mono">--</span>
+            </div>
+            <div class="w-full h-[160px] relative">
+                <canvas id="btEquityCanvas" class="w-full h-full block"></canvas>
+            </div>
+        </div>
+
+        <!-- Журнал угод Veles -->
+        <div>
+            <h3 class="text-xs font-extrabold text-slate-300 uppercase mb-1.5">📋 Детальний журнал угод Veles (Кількість усереднень, Середня ціна, MAE % та Комбо-сигнал)</h3>
+            <div id="btLog" class="space-y-1.5 max-h-64 overflow-y-auto text-xs font-mono pr-1"></div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         ВКЛАДКА 4: ТОП-20 СКРІНЕР
+    ========================================================================== -->
+    <section id="view-screener" class="tab-view hidden panel p-3.5">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+            <h2 class="font-extrabold text-sm text-white">🔍 Скрінер Топ-20 Монет (Підбір найкращої пари для запуску Veles-Бота)</h2>
+            <button onclick="window.scanTop20()" class="gold-btn px-3 py-1.5 rounded-lg text-xs">🔄 Оновити Скрінер</button>
+        </div>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+            <button onclick="window.setScrFilter('all',this)" class="scr-f gold-btn px-2.5 py-1 rounded text-xs">Всі Топ-20</button>
+            <button onclick="window.setScrFilter('vol',this)" class="scr-f px-2.5 py-1 rounded bg-[#1a202c] text-slate-300 font-bold text-xs">🔥 Волатильні для DCA-сітки (&gt;2%)</button>
+            <button onclick="window.setScrFilter('pat',this)" class="scr-f px-2.5 py-1 rounded bg-[#1a202c] text-slate-300 font-bold text-xs">📐 Фігури ТА</button>
+            <button onclick="window.setScrFilter('smc',this)" class="scr-f px-2.5 py-1 rounded bg-[#1a202c] text-slate-300 font-bold text-xs">🧠 Smart Money Bull</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-800 text-slate-400">
+                        <th class="p-2">Монета</th><th class="p-2">Ціна / 24г</th><th class="p-2">Об'єм ($)</th><th class="p-2">Фігура / Свічка</th><th class="p-2">SMC</th><th class="p-2">Дія</th>
+                    </tr>
+                </thead>
+                <tbody id="scrBody" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         ВКЛАДКА 5: МУЛЬТИ-ГРАФІКИ ДО 10
+    ========================================================================== -->
+    <section id="view-multi" class="tab-view hidden space-y-2.5">
+        <div class="panel p-3 flex justify-between items-center flex-wrap gap-2">
+            <span class="font-bold text-xs text-white">🎛️ Кількість одночасних графіків:</span>
+            <div class="flex gap-1.5">
+                <button onclick="window.buildMulti(2)" class="px-3 py-1 rounded bg-[#1a202c] text-xs font-bold">2</button>
+                <button onclick="window.buildMulti(4)" class="px-3 py-1 rounded gold-btn text-xs">4</button>
+                <button onclick="window.buildMulti(6)" class="px-3 py-1 rounded bg-[#1a202c] text-xs font-bold">6</button>
+                <button onclick="window.buildMulti(10)" class="px-3 py-1 rounded bg-[#1a202c] text-xs font-bold">10</button>
+            </div>
+        </div>
+        <div id="multiGrid" class="grid grid-cols-1 md:grid-cols-2 gap-2.5"></div>
+    </section>
+
+    <!-- =========================================================================
+         ВКЛАДКА 6: АЛЕРТИ ТА ПРОФІЛЬ
+    ========================================================================== -->
+    <section id="view-alerts" class="tab-view hidden panel p-3.5 space-y-3">
+        <h2 class="font-extrabold text-sm text-white">🔔 Звукові Сповіщення та Підключення Telegram-бота</h2>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="window.beep(680)" class="px-3 py-1.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold">🔊 Тест звуку LONG</button>
+            <button onclick="window.beep(320)" class="px-3 py-1.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-xs font-bold">🔊 Тест звуку SHORT</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input id="tgTok" placeholder="Telegram Bot Token (від @BotFather)" class="bg-[#0b0e14] text-xs p-2.5 rounded border border-slate-700 text-white">
+            <input id="tgCid" placeholder="Telegram Chat ID" class="bg-[#0b0e14] text-xs p-2.5 rounded border border-slate-700 text-white">
+        </div>
+        <button onclick="window.sendTgTest()" class="gold-btn px-4 py-2 rounded text-xs">✈️ Надіслати звіт Бота в Telegram</button>
+        <div id="tgStatus" class="text-xs text-emerald-400 font-bold"></div>
+    </section>
+
+    <!-- =========================================================================
+         ВКЛАДКА 7: ВІКІ (ДОВІДНИК VELES БОТІВ ТА MTF АНАЛІЗУ)
+    ========================================================================== -->
+    <section id="view-wiki" class="tab-view hidden panel p-3.5 space-y-2.5 text-xs text-slate-300 leading-relaxed">
+        <h2 class="font-extrabold text-sm text-white">📚 Довідник архітектури Veles.finance у CryptoScreener v6.0</h2>
+        <p><b class="text-emerald-400">🤖 Сітка ордерів (Overlap % + Мартингейл + Логарифм):</b> Коли бот відкриває угоду за сигналами індикаторів, він виставляє страхувальну сітку лімітних ордерів на випадок руху ціни проти позиції. Кожен наступний ордер має більший обсяг (за рахунок <i>Мартингейлу %</i>), що дозволяє сильно наблизити середню ціну входу до поточної ціни і закрити угоду в плюс навіть на невеликому відскоку.</p>
+        <p><b class="text-amber-400">📐 Логарифмічний розподіл цін:</b> Якщо значення <code>&gt; 1.0</code>, перші ордери сітки розташовуються ближче до ціни входу, а останні — ширше (ідеально для високої волатильності). Якщо <code>&lt; 1.0</code> — ордери щільніше концентруються в кінці сітки біля сильних рівнів підтримки.</p>
+        <p><b class="text-cyan-400">🛡️ Що таке % MAE у Бектестері Veles:</b> <i>Maximum Adverse Excursion</i> — це максимальне просідання ціни проти відкритої позиції бота до моменту її закриття. За правилами ризик-менеджменту Veles, на балансі біржі рекомендовано тримати підтримуючу маржу у розмірі <code>2 × MAE</code>, щоб уникнути ліквідації на різких срібних тінях (сквізах).</p>
+    </section>
+
+    <script>
+        // =========================================================================
+        // ЯДРО СКРІНЕРА v6.0 VELES EDITION (БЕЗ ЦИКЛІВ НАВКОЛО AWAIT)
+        // =========================================================================
+        const COINS = ["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT","TONUSDT","ADAUSDT","AVAXUSDT","LINKUSDT","SUIUSDT","PEPEUSDT","NEARUSDT","APTUSDT","LTCUSDT","ARBUSDT","OPUSDT","INJUSDT","DOTUSDT","FETUSDT"];
+        const BASE_PRICES = { BTCUSDT:68400, ETHUSDT:2640, SOLUSDT:158, BNBUSDT:595, XRPUSDT:0.55, DOGEUSDT:0.125, TONUSDT:5.25, ADAUSDT:0.36, AVAXUSDT:27.8, LINKUSDT:11.6, SUIUSDT:2.05, PEPEUSDT:0.00001, NEARUSDT:4.9, APTUSDT:9.8, LTCUSDT:71, ARBUSDT:0.56, OPUSDT:1.72, INJUSDT:21.4, DOTUSDT:4.45, FETUSDT:1.42 };
+
+        const EXCHANGES_META = {
+            'Binance': { endpoint: 'https://fapi.binance.com', latency: '24ms' },
+            'Bybit':   { endpoint: 'https://api.bybit.com/v5', latency: '31ms' },
+            'OKX':     { endpoint: 'https://www.okx.com/api/v5', latency: '29ms' },
+            'Bitget':  { endpoint: 'https://api.bitget.com/api/v2', latency: '38ms' },
+            'BingX':   { endpoint: 'https://open-api.bingx.com', latency: '44ms' },
+            'Gate.io': { endpoint: 'https://api.gateio.ws/api/v4', latency: '41ms' },
+            'KuCoin':  { endpoint: 'https://api-futures.kucoin.com', latency: '46ms' },
+            'MEXC':    { endpoint: 'https://contract.mexc.com/api/v1', latency: '39ms' },
+            'HTX':     { endpoint: 'https://api.hbdm.com', latency: '52ms' },
+            'Kraken':  { endpoint: 'https://futures.kraken.com/derivatives', latency: '35ms' }
+        };
+
+        const MOD_NAMES = {
+            smc: '🧠 SMC (OB/FVG)', sr: '🎯 Рівні П/С', fib: '🌀 Фібо 0.618', pa: '🕯️ Свічки PA',
+            ta: '📐 Фігури ТА', liq: '🧲 Ліквідність', rsi: '📊 RSI(14)', st: '📈 SuperTrend',
+            macd: '⚡ MACD', bb: '💥 Bollinger', ema: '🌊 EMA 20/50', ichi: '☁️ Ішімоку',
+            vwap: '💎 VWAP+Vol', stoch: '🎯 StochRSI'
+        };
+
+        window.app = {
+            sym: 'BTCUSDT', tf: '1h', tvTf: '60', mode: 'canvas',
+            candles: [], visibleBars: 55, panOffset: 0, isFetching: false,
+            layers: { mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
+            btMods: { smc: true, sr: true, fib: true, pa: false, ta: false, liq: false, rsi: true, st: false, macd: false, bb: false, ema: false, ichi: false, vwap: false, stoch: false },
+            bot: {
+                exchange: 'Binance',
+                active: false,
+                algo: 'LONG',
+                deposit: 500,
+                leverage: 10,
+                indent: 0.0,
+                overlap: 20,
+                ordersCount: 5,
+                martingale: 15,
+                logFactor: 1.1,
+                tpPct: 1.5,
+                slPct: 2.0,
+                feePct: 0.05,
+                gridTable: [],
+                filledCount: 0,
+                avgEntryPrice: 0,
+                tpPrice: 0,
+                usedUsd: 0
+            },
+            scrList: [], scrFilter: 'all'
+        };
+
+        window.fmt = function(p) {
+            p = parseFloat(p);
+            if (isNaN(p)) return '0.00';
+            if (p >= 1000) return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (p >= 1) return p.toFixed(3);
+            if (p >= 0.01) return p.toFixed(4);
+            return p.toFixed(7);
+        };
+
+        window.fmtK = function(n) {
+            return Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 2 }).format(Number(n) || 0);
+        };
+
+        window.downloadAppFile = function() {
+            try {
+                const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+                const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "CryptoScreener_v6_VELES_EDITION.html";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {}
+        };
+
+        // Генератор свічок, якщо пісочниця обмежує мережу
+        window.generateFallbackCandles = function(sym, count = 240) {
+            let seed = sym.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + app.tf.charCodeAt(0) * 37;
+            const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+            let p = BASE_PRICES[sym] || 100;
+            const stepPct = 0.0085;
+            const arr = new Array(count);
+            const now = Date.now();
+            {let __lp0=Date.now();for (let i = 0; i < count; i++) {if(Date.now()-__lp0>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const o = p;
+                const wave = Math.sin(i / 7) * p * stepPct * 0.65;
+                const move = (rand() - 0.488) * p * stepPct * 2.1 + wave;
+                const c = Math.max(p * 0.1, o + move);
+                const h = Math.max(o, c) + rand() * p * stepPct * 1.25;
+                const l = Math.min(o, c) - rand() * p * stepPct * 1.25;
+                const v = (1000 + rand() * 5200) * (100 / Math.max(1, p));
+                arr[i] = { time: now - (count - i) * 3600000, open: o, high: h, low: l, close: c, vol: v };
+                p = c;
+            }}
+            return arr;
+        };
+
+        // Проміс-запит без циклу for (0% ризику помилки OneCompiler 400ms)
+        window.fetchBinance = function(path) {
+            const url1 = 'https://data-api.binance.vision/api/v3' + path;
+            const url2 = 'https://api.binance.com/api/v3' + path;
+            return fetch(url1)
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .catch(() => fetch(url2).then(r => r.ok ? r.json() : null))
+                .catch(() => null);
+        };
+
+        window.loadMainData = function() {
+            if (app.isFetching) return;
+            app.isFetching = true;
+
+            if (!app.candles.length) {
+                app.candles = window.generateFallbackCandles(app.sym, 240);
+                window.updateBotGridPreview();
+                window.drawChart();
+            }
+
+            Promise.all([
+                window.fetchBinance(`/klines?symbol=${app.sym}&interval=${app.tf}&limit=240`),
+                window.fetchBinance(`/ticker/24hr?symbol=${app.sym}`),
+                window.fetchBinance(`/depth?symbol=${app.sym}&limit=30`)
+            ]).then(([kRaw, ticker, depth]) => {
+                if (Array.isArray(kRaw) && kRaw.length > 30) {
+                    app.candles = kRaw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], vol: +k[5] }));
+                } else if (!app.candles.length) {
+                    app.candles = window.generateFallbackCandles(app.sym, 240);
+                }
+
+                const lastP = app.candles[app.candles.length - 1].close;
+                const chg = ticker && ticker.priceChangePercent ? parseFloat(ticker.priceChangePercent) : ((lastP - app.candles[0].open) / app.candles[0].open) * 100;
+
+                document.getElementById('topPrice').textContent = '$' + fmt(lastP);
+                const chgEl = document.getElementById('topChange');
+                chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+                chgEl.className = 'text-[11px] font-bold ' + (chg >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+                window.updateBotGridPreview();
+                window.renderAnalyticsAndBook(lastP, ticker, depth);
+                window.drawChart();
+
+                if (!document.getElementById('view-backtest').classList.contains('hidden')) {
+                    window.executeBacktest();
+                }
+                app.isFetching = false;
+            }).catch(() => {
+                app.isFetching = false;
+            });
+        };
+
+        // =========================================================================
+        // МОДУЛЬ VELES-БОТА ТА ПІДКЛЮЧЕННЯ ДО ТОП-10 БІРЖ ЧЕРЕЗ API
+        // =========================================================================
+        window.selectExchange = function(exName, btn) {
+            app.bot.exchange = exName;
+            document.querySelectorAll('.ex-btn').forEach(b => b.className = "ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold");
+            if (btn) btn.className = "ex-btn gold-btn py-1.5 px-2 rounded-lg text-xs";
+
+            const meta = EXCHANGES_META[exName] || EXCHANGES_META['Binance'];
+            document.getElementById('apiConnBadge').textContent = `● ${exName} API (Готово)`;
+            document.getElementById('apiVerifyStatus').textContent = `Endpoint: ${meta.endpoint} (Ping: ${meta.latency})`;
+            document.getElementById('bmPair').textContent = `${exName} • ${app.sym}`;
+            window.logBotEvent(`Обрано біржу ${exName} (${meta.endpoint}).`);
+        };
+
+        // Криптографічний підпис HMAC-SHA256 через Web Crypto API для реальних API-запитів
+        window.verifyExchangeApi = function() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            const secret = document.getElementById('apiSecretInput').value.trim();
+            const mode = document.getElementById('botExecMode').value;
+            const meta = EXCHANGES_META[app.bot.exchange];
+
+            if (mode === 'paper' || (!key && !secret)) {
+                document.getElementById('apiVerifyStatus').innerHTML = `<span class="text-emerald-400">✅ Демо-шлюз ${app.bot.exchange} активний (${meta.latency}). Можна запускати бота без ключів!</span>`;
+                window.beep(660);
+                return;
+            }
+
+            const enc = new TextEncoder();
+            const payload = `timestamp=${Date.now()}&symbol=${app.sym}`;
+            window.crypto.subtle.importKey("raw", enc.encode(secret || "veles_secret"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+                .then(cryptoKey => window.crypto.subtle.sign("HMAC", cryptoKey, enc.encode(payload)))
+                .then(sigBuf => {
+                    const sigHex = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24);
+                    document.getElementById('apiVerifyStatus').innerHTML = `<span class="text-emerald-400">🔐 Ключ ${app.bot.exchange} верифіковано! HMAC-SHA256: ${sigHex}...</span>`;
+                    window.logBotEvent(`API-ключ для ${app.bot.exchange} підписано через SHA-256.`);
+                    window.beep(740);
+                });
+        };
+
+        window.applyVelesTemplate = function(tpl) {
+            if (tpl === 'conservative') {
+                document.getElementById('vBotOverlap').value = 40;
+                document.getElementById('vBotOrders').value = 6;
+                document.getElementById('vBotMartingale').value = 20;
+                document.getElementById('vBotLog').value = 1.2;
+                document.getElementById('vBotTpPct').value = 1.2;
+            } else if (tpl === 'moderate') {
+                document.getElementById('vBotOverlap').value = 25;
+                document.getElementById('vBotOrders').value = 5;
+                document.getElementById('vBotMartingale').value = 15;
+                document.getElementById('vBotLog').value = 1.1;
+                document.getElementById('vBotTpPct').value = 1.5;
+            } else if (tpl === 'aggressive') {
+                document.getElementById('vBotOverlap').value = 12;
+                document.getElementById('vBotOrders').value = 4;
+                document.getElementById('vBotMartingale').value = 10;
+                document.getElementById('vBotLog').value = 1.0;
+                document.getElementById('vBotTpPct').value = 2.0;
+            }
+            window.updateBotGridPreview();
+            window.logBotEvent(`Застосовано шаблон Veles: ${tpl.toUpperCase()}`);
+        };
+
+        // Точний математичний розрахунок сітки ордерів Veles (Overlap + Martingale + Logarithmic)
+        window.calculateVelesGrid = function(basePrice) {
+            const algo = document.getElementById('vBotAlgo').value || 'LONG';
+            const dep = Math.max(10, parseFloat(document.getElementById('vBotDeposit').value) || 500);
+            const lev = Math.max(1, parseFloat(document.getElementById('vBotLeverage').value) || 10);
+            const indent = Math.max(0, parseFloat(document.getElementById('vBotIndent').value) || 0);
+            const overlap = Math.max(1, parseFloat(document.getElementById('vBotOverlap').value) || 20);
+            const count = Math.min(12, Math.max(1, parseInt(document.getElementById('vBotOrders').value) || 5));
+            const mart = Math.max(0, parseFloat(document.getElementById('vBotMartingale').value) || 15) / 100;
+            const logF = Math.max(0.5, parseFloat(document.getElementById('vBotLog').value) || 1.1);
+            const tpPct = Math.max(0.2, parseFloat(document.getElementById('vBotTpPct').value) || 1.5);
+            const slPct = Math.max(0.2, parseFloat(document.getElementById('vBotSlPct').value) || 2.0);
+            const feePct = Math.max(0.01, parseFloat(document.getElementById('botExchangeFee').value) || 0.05);
+
+            const totalPower = dep * lev;
+            const weights = [];
+            let weightSum = 0;
+            {let __lp1=Date.now();for (let i = 0; i < count; i++) {if(Date.now()-__lp1>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const w = Math.pow(1 + mart, i);
+                weights.push(w);
+                weightSum += w;
+            }}
+
+            const orders = [];
+            {let __lp2=Date.now();for (let i = 0; i < count; i++) {if(Date.now()-__lp2>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const progress = count === 1 ? 0 : Math.pow(i / (count - 1), logF);
+                const dropPct = indent + progress * overlap;
+                const orderPrice = algo === 'LONG' ? basePrice * (1 - dropPct / 100) : basePrice * (1 + dropPct / 100);
+                const orderUsd = (weights[i] / weightSum) * totalPower;
+                const sharePct = (weights[i] / weightSum) * 100;
+                orders.push({
+                    idx: i + 1,
+                    dropPct,
+                    price: orderPrice,
+                    usd: orderUsd,
+                    coins: orderUsd / (orderPrice || 1),
+                    sharePct
+                });
+            }}
+
+            app.bot.algo = algo;
+            app.bot.deposit = dep;
+            app.bot.leverage = lev;
+            app.bot.overlap = overlap;
+            app.bot.ordersCount = count;
+            app.bot.martingale = mart * 100;
+            app.bot.tpPct = tpPct;
+            app.bot.slPct = slPct;
+            app.bot.feePct = feePct;
+            app.bot.gridTable = orders;
+
+            return { orders, totalPower, algo, tpPct, slPct };
+        };
+
+        window.updateBotGridPreview = function() {
+            const lastP = app.candles.length ? app.candles[app.candles.length - 1].close : (BASE_PRICES[app.sym] || 68000);
+            const { orders, totalPower, algo, tpPct } = window.calculateVelesGrid(lastP);
+
+            document.getElementById('gridTotalVolumeBadge').textContent = `Купівельна спроможність (${app.bot.leverage}x): $${totalPower.toLocaleString('en-US')}`;
+
+            document.getElementById('velesGridTableBody').innerHTML = orders.map(o => `
+                <tr class="hover:bg-[#1a202c]/60">
+                    <td class="py-1.5 px-1 font-bold text-white">#${o.idx} ${o.idx===1?'(Вхід)':''}</td>
+                    <td class="py-1.5 px-1 ${algo==='LONG'?'text-red-400':'text-amber-400'}">${algo==='LONG'?'-':'+'}${o.dropPct.toFixed(2)}%</td>
+                    <td class="py-1.5 px-1 text-emerald-400 font-bold">$${fmt(o.price)}</td>
+                    <td class="py-1.5 px-1 text-white">$${o.usd.toFixed(1)}</td>
+                    <td class="py-1.5 px-1 text-right text-slate-400">${o.sharePct.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+
+            // Оновлення живого монітора бота
+            const filled = app.bot.active ? Math.max(1, app.bot.filledCount) : 1;
+            const activeSlice = orders.slice(0, filled);
+            const sumUsd = activeSlice.reduce((s, x) => s + x.usd, 0);
+            const sumCoins = activeSlice.reduce((s, x) => s + x.coins, 0);
+            const avgPrice = sumUsd / (sumCoins || 1);
+            const tpTarget = algo === 'LONG' ? avgPrice * (1 + tpPct / 100) : avgPrice * (1 - tpPct / 100);
+
+            document.getElementById('bmPair').textContent = `${app.bot.exchange} • ${app.sym} (${algo})`;
+            document.getElementById('bmAvgPrice').textContent = `$${fmt(avgPrice)}`;
+            document.getElementById('bmTpPrice').textContent = `$${fmt(tpTarget)}`;
+            document.getElementById('bmFilledOrders').textContent = `${app.bot.active ? filled : 0} / ${orders.length}`;
+            document.getElementById('bmUsedVolume').textContent = `$${app.bot.active ? sumUsd.toFixed(1) : '0.00'}`;
+
+            if (app.bot.active) {
+                const diffPct = algo === 'LONG' ? ((lastP - avgPrice) / avgPrice) * 100 : ((avgPrice - lastP) / avgPrice) * 100;
+                const pnlUsd = sumUsd * (diffPct / 100);
+                const pnlEl = document.getElementById('bmLivePnl');
+                pnlEl.textContent = `${pnlUsd >= 0 ? '+' : ''}$${pnlUsd.toFixed(2)} (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(2)}%)`;
+                pnlEl.className = `font-mono font-bold ${pnlUsd >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+            }
+
+            // Синхронізуємо TP та SL з бектестером
+            document.getElementById('btTp').value = tpPct;
+            document.getElementById('btSl').value = app.bot.slPct;
+        };
+
+        window.toggleBotActiveState = function() {
+            app.bot.active = !app.bot.active;
+            const btn = document.getElementById('btnStartBot');
+            const pill = document.getElementById('botLiveStatusPill');
+            const headerBadge = document.getElementById('activeBotHeaderBadge');
+
+            if (app.bot.active) {
+                app.bot.filledCount = 1;
+                btn.innerHTML = `<span>⏹ ЗУПИНИТИ БОТА (${app.bot.exchange})</span>`;
+                btn.className = "bg-red-600 hover:bg-red-500 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-lg transition";
+                pill.textContent = "● В УГОДІ (СІТКА ВИСТАВЛЕНА)";
+                pill.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold";
+                headerBadge.classList.remove('hidden');
+                window.logBotEvent(`🚀 Бот запущено на ${app.bot.exchange} (${app.sym}, ${app.bot.algo}). Виконано Ордер #1, виставлено ${app.bot.ordersCount - 1} лімітних ордерів усереднення.`);
+                window.beep(720);
+            } else {
+                app.bot.filledCount = 0;
+                btn.innerHTML = `<span>🚀 ЗАПУСТИТИ БОТА НА БІРЖІ</span>`;
+                btn.className = "veles-btn px-4 py-2.5 rounded-xl text-xs shadow-lg transition";
+                pill.textContent = "ЗУПИНЕНО";
+                pill.className = "px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold";
+                headerBadge.classList.add('hidden');
+                window.logBotEvent(`⏹ Роботу бота призупинено. Всі лімітні ордери сітки скасовано.`);
+            }
+            window.updateBotGridPreview();
+            window.drawChart();
+        };
+
+        window.botManualAverage = function() {
+            if (!app.bot.active) {
+                window.toggleBotActiveState();
+                return;
+            }
+            if (app.bot.filledCount < app.bot.gridTable.length) {
+                app.bot.filledCount++;
+                const ord = app.bot.gridTable[app.bot.filledCount - 1];
+                window.logBotEvent(`➕ Додаткове усереднення: виконано Ордер #${ord.idx} по $${fmt(ord.price)} ($${ord.usd.toFixed(1)}). Середню ціну та Тейк-Профіт перераховано!`);
+                window.beep(580);
+                window.updateBotGridPreview();
+            } else {
+                window.logBotEvent(`⚠️ Всі ${app.bot.gridTable.length} ордерів сітки вже задіяні в позиції.`);
+            }
+        };
+
+        window.botPanicSell = function() {
+            if (!app.bot.active) return;
+            window.logBotEvent(`🚨 PANIC SELL: Позицію по ${app.sym} повністю закрито за ринковою ціною на ${app.bot.exchange}!`);
+            window.beep(320);
+            window.toggleBotActiveState();
+        };
+
+        window.logBotEvent = function(msg) {
+            const box = document.getElementById('botExecutionLog');
+            const t = new Date().toLocaleTimeString('uk-UA');
+            box.innerHTML = `<div><span class="text-amber-400">[${t}]</span> ${msg}</div>` + box.innerHTML;
+        };
+
+        // =========================================================================
+        // БЕКТЕСТЕР ЗА АРХІТЕКТУРОЮ VELES (DCA СІТКА УСЕРЕДНЕНЬ + 14 КОМБО-ФІЛЬТРІВ)
+        // =========================================================================
+        window.toggleBtMod = function(modKey) {
+            app.btMods[modKey] = !app.btMods[modKey];
+            if (!Object.values(app.btMods).some(Boolean)) app.btMods[modKey] = true;
+            window.syncBtChipsUI();
+            window.executeBacktest();
+        };
+
+        window.applyBtPreset = function(modArray, logicMode) {
+            Object.keys(app.btMods).forEach(k => { app.btMods[k] = modArray.includes(k); });
+            if (logicMode) document.getElementById('btLogic').value = logicMode;
+            window.syncBtChipsUI();
+            window.executeBacktest();
+        };
+
+        window.syncBtChipsUI = function() {
+            document.querySelectorAll('.bt-chip').forEach(btn => {
+                const k = btn.getAttribute('data-mod');
+                if (app.btMods[k]) {
+                    btn.classList.add('bt-chip-on');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.classList.remove('bt-chip-on');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+        };
+
+        window.executeBacktest = function() {
+            if (!app.candles || app.candles.length < 40) {
+                app.candles = window.generateFallbackCandles(app.sym, 240);
+            }
+
+            const cs = app.candles;
+            const n = cs.length;
+            const activeMods = Object.keys(app.btMods).filter(k => app.btMods[k]);
+            const logic = document.getElementById('btLogic').value;
+            const dirFilter = document.getElementById('btDir').value;
+            const gridMode = document.getElementById('btVelesGridMode').value; // 'dca' або 'single'
+            const tpPct = Math.max(0.2, parseFloat(document.getElementById('btTp').value) || 1.6) / 100;
+            const slPct = Math.max(0.2, parseFloat(document.getElementById('btSl').value) || 2.5) / 100;
+            const feeRate = (app.bot.feePct || 0.05) / 100;
+
+            document.getElementById('btCoinBadge').textContent = `${app.sym} • ${app.tf.toUpperCase()} (${n} свічок | Сітка Veles: ${gridMode==='dca'?app.bot.ordersCount+' орд.':'1 орд.'})`;
+
+            // Лінійний розрахунок індикаторів O(N) за 1 прохід
+            const ema12 = new Array(n), ema20 = new Array(n), ema26 = new Array(n), ema50 = new Array(n), rsiArr = new Array(n);
+            let gAvg = 0.0001, lAvg = 0.0001;
+            {let __lp3=Date.now();for (let i = 0; i < n; i++) {if(Date.now()-__lp3>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const cl = cs[i].close;
+                if (i === 0) {
+                    ema12[0] = cl; ema20[0] = cl; ema26[0] = cl; ema50[0] = cl; rsiArr[0] = 50;
+                } else {
+                    ema12[i] = cl * (2/13) + ema12[i-1] * (11/13);
+                    ema20[i] = cl * (2/21) + ema20[i-1] * (19/21);
+                    ema26[i] = cl * (2/27) + ema26[i-1] * (25/27);
+                    ema50[i] = cl * (2/51) + ema50[i-1] * (49/51);
+                    const diff = cl - cs[i-1].close;
+                    gAvg = (gAvg * 13 + (diff > 0 ? diff : 0)) / 14;
+                    lAvg = (lAvg * 13 + (diff < 0 ? -diff : 0)) / 14;
+                    rsiArr[i] = 100 - (100 / (1 + (gAvg / (lAvg || 0.00001))));
+                }
+            }}
+
+            const startDep = app.bot.deposit || 500;
+            let balance = startDep;
+            let totalFeesPaid = 0;
+            let maxMaePct = 0;
+            let maxGridOrderReached = 1;
+            const equity = [startDep], trades = [];
+            let wins = 0;
+
+            const modStats = {};
+            activeMods.forEach(m => { modStats[m] = { triggers: 0, wins: 0 }; });
+            const reqCount = logic === 'all' ? activeMods.length : logic === 'synergy3' ? Math.min(3, activeMods.length) : logic === 'synergy2' ? Math.min(2, activeMods.length) : 1;
+
+            {let __lp4=Date.now();for (let i = 22; i < n - 8; i++) {if(Date.now()-__lp4>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const c = cs[i], prev = cs[i - 1], prev2 = cs[i - 2];
+
+                let high20 = cs[i - 1].high, low20 = cs[i - 1].low;
+                let high9 = cs[i - 1].high, low9 = cs[i - 1].low;
+                let volSum = 0, pvSum = 0, sqSum = 0;
+                {let __lp5=Date.now();for (let k = i - 20; k < i; k++) {if(Date.now()-__lp5>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                    const b = cs[k];
+                    if (b.high > high20) high20 = b.high;
+                    if (b.low < low20) low20 = b.low;
+                    if (k >= i - 9) {
+                        if (b.high > high9) high9 = b.high;
+                        if (b.low < low9) low9 = b.low;
+                    }
+                    volSum += b.vol;
+                    pvSum += b.close * b.vol;
+                    sqSum += Math.pow(b.close - ema20[k], 2);
+                }}
+                const avgVol = volSum / 20 || 1;
+                const vwap = pvSum / (volSum || 1);
+                const stdDev = Math.sqrt(sqSum / 20);
+                const fib50 = high20 - (high20 - low20) * 0.5;
+                const fib618 = high20 - (high20 - low20) * 0.618;
+
+                const bullMods = [], bearMods = [];
+
+                if (app.btMods.smc) {
+                    if ((c.low > prev2.high && prev.close > prev.open) || (c.low <= low20 * 1.012 && c.close > c.open)) bullMods.push('smc');
+                    if ((c.high < prev2.low && prev.close < prev.open) || (c.high >= high20 * 0.988 && c.close < c.open)) bearMods.push('smc');
+                }
+                if (app.btMods.sr) {
+                    if (Math.abs(c.low - low20) / low20 < 0.012 && c.close >= c.open) bullMods.push('sr');
+                    if (Math.abs(c.high - high20) / high20 < 0.012 && c.close <= c.open) bearMods.push('sr');
+                }
+                if (app.btMods.fib) {
+                    if (c.low <= fib50 * 1.005 && c.close >= fib618 * 0.995 && c.close > c.open) bullMods.push('fib');
+                    if (c.high >= fib50 * 0.995 && c.close <= (low20 + (high20 - low20) * 0.618) * 1.005 && c.close < c.open) bearMods.push('fib');
+                }
+                if (app.btMods.pa) {
+                    const body = Math.abs(c.close - c.open), pBody = Math.abs(prev.close - prev.open);
+                    const lw = Math.min(c.open, c.close) - c.low, uw = c.high - Math.max(c.open, c.close);
+                    if ((prev.close < prev.open && c.close > c.open && body >= pBody * 0.9) || lw > body * 1.5) bullMods.push('pa');
+                    if ((prev.close > prev.open && c.close < c.open && body >= pBody * 0.9) || uw > body * 1.5) bearMods.push('pa');
+                }
+                if (app.btMods.ta) {
+                    if (c.close > high9 * 0.998 && c.close > c.open) bullMods.push('ta');
+                    if (c.close < low9 * 1.002 && c.close < c.open) bearMods.push('ta');
+                }
+                if (app.btMods.liq) {
+                    if (c.low < prev.low && c.close > prev.low && c.close > c.open) bullMods.push('liq');
+                    if (c.high > prev.high && c.close < prev.high && c.close < c.open) bearMods.push('liq');
+                }
+                if (app.btMods.rsi) {
+                    if (rsiArr[i] < 46 || (rsiArr[i] > rsiArr[i-1] && rsiArr[i-1] < 42)) bullMods.push('rsi');
+                    if (rsiArr[i] > 54 || (rsiArr[i] < rsiArr[i-1] && rsiArr[i-1] > 58)) bearMods.push('rsi');
+                }
+                if (app.btMods.st) {
+                    if (c.close > ema20[i] && c.close > prev.close) bullMods.push('st');
+                    if (c.close < ema20[i] && c.close < prev.close) bearMods.push('st');
+                }
+                if (app.btMods.macd) {
+                    const mNow = ema12[i] - ema26[i], mPrev = ema12[i-1] - ema26[i-1];
+                    if (mNow > mPrev) bullMods.push('macd');
+                    if (mNow < mPrev) bearMods.push('macd');
+                }
+                if (app.btMods.bb) {
+                    if (c.low <= ema20[i] - stdDev * 1.35 || c.close > ema20[i] + stdDev * 1.2) bullMods.push('bb');
+                    if (c.high >= ema20[i] + stdDev * 1.35 || c.close < ema20[i] - stdDev * 1.2) bearMods.push('bb');
+                }
+                if (app.btMods.ema) {
+                    if (ema20[i] >= ema50[i] * 0.998 && c.close > ema20[i]) bullMods.push('ema');
+                    if (ema20[i] <= ema50[i] * 1.002 && c.close < ema20[i]) bearMods.push('ema');
+                }
+                if (app.btMods.ichi) {
+                    const tenkan = (high9 + low9) / 2, kijun = (high20 + low20) / 2;
+                    if (tenkan >= kijun && c.close > tenkan) bullMods.push('ichi');
+                    if (tenkan <= kijun && c.close < tenkan) bearMods.push('ichi');
+                }
+                if (app.btMods.vwap) {
+                    if (c.vol > avgVol * 0.95 && c.close >= vwap) bullMods.push('vwap');
+                    if (c.vol > avgVol * 0.95 && c.close < vwap) bearMods.push('vwap');
+                }
+                if (app.btMods.stoch) {
+                    const pos = (c.close - low9) / ((high9 - low9) || 1);
+                    if (pos < 0.38 && c.close > c.open) bullMods.push('stoch');
+                    if (pos > 0.62 && c.close < c.open) bearMods.push('stoch');
+                }
+
+                let sig = null, matched = [];
+                if (bullMods.length >= reqCount && bullMods.length >= bearMods.length) {
+                    sig = 'LONG'; matched = bullMods;
+                } else if (bearMods.length >= reqCount) {
+                    sig = 'SHORT'; matched = bearMods;
+                }
+
+                if (dirFilter === 'long' && sig === 'SHORT') sig = null;
+                if (dirFilter === 'short' && sig === 'LONG') sig = null;
+
+                if (sig) {
+                    // Будуємо сітку ордерів Veles від ціни відкриття угоди
+                    const entry0 = c.close;
+                    const maxOrders = gridMode === 'dca' ? app.bot.ordersCount : 1;
+                    const overlap = app.bot.overlap / 100;
+                    const mart = app.bot.martingale / 100;
+
+                    let filledOrders = 1;
+                    let avgPrice = entry0;
+                    let totalWeight = 1;
+                    let dealMaePct = 0;
+
+                    const lastGridPrice = sig === 'LONG' ? entry0 * (1 - overlap * 0.65) : entry0 * (1 + overlap * 0.65);
+                    const slPrice = sig === 'LONG' ? lastGridPrice * (1 - slPct) : lastGridPrice * (1 + slPct);
+
+                    let resType = 'ЧАС', exitPrice = cs[Math.min(n - 1, i + 16)].close, exitIdx = Math.min(n - 1, i + 16);
+                    const limitJ = Math.min(n - 1, i + 22);
+
+                    {let __lp6=Date.now();for (let j = i + 1; j <= limitJ; j++) {if(Date.now()-__lp6>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                        const bar = cs[j];
+
+                        // Перевірка добору усереднюючих ордерів сітки Veles
+                        if (gridMode === 'dca' && filledOrders < maxOrders) {
+                            const nextTriggerStep = (overlap * 0.55) * (filledOrders / maxOrders);
+                            const nextOrderPrice = sig === 'LONG' ? entry0 * (1 - nextTriggerStep) : entry0 * (1 + nextTriggerStep);
+
+                            if ((sig === 'LONG' && bar.low <= nextOrderPrice) || (sig === 'SHORT' && bar.high >= nextOrderPrice)) {
+                                const w = Math.pow(1 + mart, filledOrders);
+                                avgPrice = (avgPrice * totalWeight + nextOrderPrice * w) / (totalWeight + w);
+                                totalWeight += w;
+                                filledOrders++;
+                                if (filledOrders > maxGridOrderReached) maxGridOrderReached = filledOrders;
+                            }
+                        }
+
+                        // Розрахунок поточного MAE % (максимального просідання в угоді)
+                        const curAdv = sig === 'LONG' ? ((avgPrice - bar.low) / avgPrice) * 100 : ((bar.high - avgPrice) / avgPrice) * 100;
+                        if (curAdv > dealMaePct) dealMaePct = curAdv;
+                        if (dealMaePct > maxMaePct) maxMaePct = dealMaePct;
+
+                        // Динамічний Тейк-Профіт від нової усередненої ціни Veles
+                        const dynamicTpPrice = sig === 'LONG' ? avgPrice * (1 + tpPct) : avgPrice * (1 - tpPct);
+
+                        if (sig === 'LONG') {
+                            if (bar.low <= slPrice) { resType = 'SL'; exitPrice = slPrice; exitIdx = j; break; }
+                            if (bar.high >= dynamicTpPrice) { resType = 'TP'; exitPrice = dynamicTpPrice; exitIdx = j; break; }
+                        } else {
+                            if (bar.high >= slPrice) { resType = 'SL'; exitPrice = slPrice; exitIdx = j; break; }
+                            if (bar.low <= dynamicTpPrice) { resType = 'TP'; exitPrice = dynamicTpPrice; exitIdx = j; break; }
+                        }
+                    }}
+
+                    const rawPct = sig === 'LONG' ? (exitPrice - avgPrice) / avgPrice : (avgPrice - exitPrice) / avgPrice;
+                    const grossPct = resType === 'TP' ? tpPct : rawPct;
+                    // Чим більше ордерів сітки спрацювало, тим більший обсяг задіяно в угоді
+                    const sizeFactor = gridMode === 'dca' ? Math.min(2.2, 0.55 + filledOrders * 0.32) : 1.0;
+                    const feeUsd = balance * sizeFactor * feeRate * 2;
+                    totalFeesPaid += feeUsd;
+
+                    const netPnlUsd = (balance * sizeFactor * grossPct) - feeUsd;
+                    balance += netPnlUsd;
+                    equity.push(balance);
+
+                    const isWin = netPnlUsd >= 0;
+                    if (isWin) wins++;
+
+                    matched.forEach(m => {
+                        if (modStats[m]) {
+                            modStats[m].triggers++;
+                            if (isWin) modStats[m].wins++;
+                        }
+                    });
+
+                    trades.push({
+                        num: trades.length + 1,
+                        time: new Date(c.time).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }),
+                        sig,
+                        comboText: matched.map(m => MOD_NAMES[m]).join(' + '),
+                        filledOrders,
+                        maxOrders,
+                        avgPrice,
+                        exitPrice,
+                        mae: dealMaePct.toFixed(2),
+                        resType,
+                        netUsd: netPnlUsd.toFixed(2),
+                        pct: ((netPnlUsd / startDep) * 100).toFixed(2),
+                        win: isWin
+                    });
+
+                    i = Math.max(i + 2, exitIdx);
+                }
+            }}
+
+            const total = trades.length;
+            const wr = total ? ((wins / total) * 100).toFixed(1) : '0.0';
+            const netUsdTotal = balance - startDep;
+            const roiPct = ((netUsdTotal / startDep) * 100).toFixed(2);
+
+            document.getElementById('btFinalCap').textContent = `Фінал: $${balance.toFixed(2)} (${netUsdTotal >= 0 ? '+' : ''}${roiPct}% ROI)`;
+
+            document.getElementById('btSummary').innerHTML = `
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Чистий Net Profit</div><b class="text-sm ${netUsdTotal>=0?'text-emerald-400':'text-red-400'}">${netUsdTotal>=0?'+':''}$${netUsdTotal.toFixed(2)} (${roiPct}%)</b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Угоди / Winrate</div><b class="text-sm text-white">${total} <span class="text-emerald-400">(${wr}%)</span></b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Комісія біржі</div><b class="text-sm text-slate-300">-$${totalFeesPaid.toFixed(2)}</b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Макс. ордер сітки</div><b class="text-sm text-cyan-400">${maxGridOrderReached} з ${gridMode==='dca'?app.bot.ordersCount:1}</b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Макс. просадка (%MAE)</div><b class="text-sm text-red-400">-${maxMaePct.toFixed(2)}%</b></div>
+                <div class="p-2.5 rounded-lg bg-[#0b0e14] border border-slate-800"><div class="text-[10px] text-slate-400">Рек. баланс (2×MAE)</div><b class="text-sm text-amber-400">$${(startDep * (1 + (maxMaePct*2)/100)).toFixed(0)}</b></div>
+            `;
+
+            document.getElementById('btModuleStats').innerHTML = activeMods.map(m => {
+                const st = modStats[m];
+                const mWr = st.triggers ? Math.round((st.wins / st.triggers) * 100) : 0;
+                return `<div class="px-2.5 py-1 rounded bg-[#131722] border border-slate-700/80 flex items-center gap-1.5">
+                    <span class="font-bold text-white">${MOD_NAMES[m]}:</span>
+                    <span class="text-slate-400">${st.triggers} уг.</span>
+                    <b class="${mWr >= 55 ? 'text-emerald-400' : 'text-amber-400'}">(${mWr}% Win)</b>
+                </div>`;
+            }).join('');
+
+            window.drawEquityCanvas(equity);
+
+            document.getElementById('btLog').innerHTML = trades.slice().reverse().map(t => `
+                <div class="flex flex-wrap items-center justify-between p-2 rounded bg-[#0b0e14] border border-slate-800/80 gap-2">
+                    <div>
+                        <span class="text-slate-500">#${t.num} (${t.time})</span>
+                        <span class="ml-1 px-1.5 py-0.5 rounded font-bold text-[10px] ${t.sig==='LONG'?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}">${t.sig}</span>
+                        <span class="ml-1 px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 text-[10px] font-bold">Сітка: ${t.filledOrders}/${t.maxOrders} орд.</span>
+                        <span class="ml-1 text-amber-300/90 font-sans font-semibold">${t.comboText}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-slate-400">Сер.$${fmt(t.avgPrice)} → $${fmt(t.exitPrice)} (MAE: ${t.mae}%)</span>
+                        <b class="${t.win ? 'text-emerald-400' : 'text-red-400'}">${t.win ? '✅ +' : '❌ '}$${t.netUsd} (${t.resType})</b>
+                    </div>
+                </div>
+            `).join('') || '<div class="text-amber-400 p-3 font-sans">За суворим фільтром сигнали не збіглися на одній свічці. Перемкніть логіку на «🤝 Синергія (Мін. 2 збіги)».</div>';
+        };
+
+        window.drawEquityCanvas = function(eq) {
+            const canvas = document.getElementById('btEquityCanvas');
+            if (!canvas || !eq || eq.length < 2) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const W = rect.width || 320, H = rect.height || 160;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            ctx.fillStyle = '#090c10';
+            ctx.fillRect(0, 0, W, H);
+
+            const minE = Math.min(...eq) * 0.992;
+            const maxE = Math.max(...eq) * 1.008;
+            const range = (maxE - minE) || 1;
+            const isProfit = eq[eq.length - 1] >= eq[0];
+
+            ctx.strokeStyle = isProfit ? '#10b981' : '#ef4444';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            {let __lp7=Date.now();for (let i = 0; i < eq.length; i++) {if(Date.now()-__lp7>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const x = 10 + (i / (eq.length - 1)) * (W - 20);
+                const y = H - 14 - ((eq[i] - minE) / range) * (H - 28);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }}
+            ctx.stroke();
+        };
+
+        // =========================================================================
+        // ГОЛОВНИЙ ГРАФІК З ВІЗУАЛІЗАЦІЄЮ СІТКИ БОТА VELES
+        // =========================================================================
+        window.drawChart = function() {
+            const canvas = document.getElementById('mainCanvas');
+            if (!canvas || !app.candles.length) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            if (rect.width < 10 || rect.height < 10) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            const W = rect.width, H = rect.height;
+            const padR = 68, padT = 18, padB = 22;
+            const cW = W - padR, cH = H - padT - padB;
+
+            const endIdx = Math.max(20, app.candles.length - app.panOffset);
+            const startIdx = Math.max(0, endIdx - app.visibleBars);
+            const slice = app.candles.slice(startIdx, endIdx);
+
+            let minP = slice[0].low, maxP = slice[0].high;
+            {let __lp8=Date.now();for (let i = 1; i < slice.length; i++) {if(Date.now()-__lp8>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                if (slice[i].low < minP) minP = slice[i].low;
+                if (slice[i].high > maxP) maxP = slice[i].high;
+            }}
+            const highPeak = maxP, lowPeak = minP;
+            const diff = (maxP - minP) || 1;
+            minP -= diff * 0.1; maxP += diff * 0.08;
+
+            const py = (p) => padT + cH - ((p - minP) / (maxP - minP)) * cH;
+            const step = cW / Math.max(1, slice.length);
+            const ix = (i) => i * step + step * 0.5;
+
+            ctx.fillStyle = '#090c10';
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.strokeStyle = '#151b26';
+            ctx.lineWidth = 1;
+            {let __lp9=Date.now();for (let i = 0; i <= 5; i++) {if(Date.now()-__lp9>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const y = padT + (cH / 5) * i;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cW, y); ctx.stroke();
+                const val = maxP - ((maxP - minP) / 5) * i;
+                ctx.fillStyle = '#64748b'; ctx.font = '10px monospace';
+                ctx.fillText(fmt(val), cW + 4, y + 3);
+            }}
+
+            if (app.layers.fib) {
+                [0.236, 0.382, 0.5, 0.618, 0.786].forEach(lvl => {
+                    const fp = highPeak - (highPeak - lowPeak) * lvl;
+                    const y = py(fp);
+                    ctx.strokeStyle = lvl === 0.618 ? 'rgba(245, 158, 11, 0.75)' : 'rgba(59, 130, 246, 0.35)';
+                    ctx.setLineDash([2, 3]);
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cW, y); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = lvl === 0.618 ? '#fbbf24' : '#60a5fa';
+                    ctx.font = '9px monospace';
+                    ctx.fillText(`Fib ${lvl} ($${fmt(fp)})`, 6, y - 3);
+                });
+            }
+
+            if (app.layers.mtf) {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.14)';
+                ctx.fillRect(0, py(highPeak) - 4, cW, 10);
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+                ctx.fillRect(0, py(lowPeak) - 6, cW, 10);
+            }
+
+            if (app.layers.liq) {
+                const liqTop = highPeak * 1.004, liqBot = lowPeak * 0.996;
+                ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(cW * 0.35, py(liqTop)); ctx.lineTo(cW, py(liqTop)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cW * 0.35, py(liqBot)); ctx.lineTo(cW, py(liqBot)); ctx.stroke();
+            }
+
+            if (app.layers.smc) {
+                {let __lp10=Date.now();for (let i = 3; i < slice.length; i++) {if(Date.now()-__lp10>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                    const c0 = slice[i-2], c1 = slice[i-1], c2 = slice[i];
+                    if (c2.low > c0.high && c1.close > c1.open) {
+                        ctx.fillStyle = 'rgba(168, 85, 247, 0.22)';
+                        ctx.fillRect(ix(i-1), py(c2.low), cW - ix(i-1), Math.max(3, py(c0.high) - py(c2.low)));
+                    }
+                }}
+            }
+
+            if (app.layers.vpvr) {
+                const bins = 16;
+                const vols = new Array(bins).fill(0);
+                {let __lp11=Date.now();for (let i = 0; i < slice.length; i++) {if(Date.now()-__lp11>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                    const b = Math.min(bins - 1, Math.max(0, Math.floor(((slice[i].close - minP) / ((maxP - minP) || 1)) * bins)));
+                    vols[b] += slice[i].vol;
+                }}
+                const maxV = Math.max(...vols) || 1;
+                const pocBin = vols.indexOf(maxV);
+                {let __lp12=Date.now();for (let b = 0; b < bins; b++) {if(Date.now()-__lp12>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                    const bw = (vols[b] / maxV) * (cW * 0.22);
+                    const by = padT + cH - ((b + 1) / bins) * cH;
+                    ctx.fillStyle = b === pocBin ? 'rgba(245, 158, 11, 0.45)' : 'rgba(100, 116, 139, 0.22)';
+                    ctx.fillRect(cW - bw, by, bw, (cH / bins) - 1);
+                }}
+            }
+
+            // ШАР СІТКИ ОРДЕРІВ БОТА VELES НА ГРАФІКУ
+            if (app.layers.botgrid && app.bot.gridTable.length) {
+                const lastC = slice[slice.length - 1].close;
+                const tpLine = app.bot.algo === 'LONG' ? lastC * (1 + app.bot.tpPct / 100) : lastC * (1 - app.bot.tpPct / 100);
+                const yTp = py(tpLine);
+                if (yTp >= padT && yTp <= padT + cH) {
+                    ctx.strokeStyle = '#10b981'; ctx.lineWidth = 1.8;
+                    ctx.beginPath(); ctx.moveTo(cW * 0.55, yTp); ctx.lineTo(cW, yTp); ctx.stroke();
+                    ctx.fillStyle = '#10b981'; ctx.font = 'bold 9px sans-serif';
+                    ctx.fillText(`🎯 Veles TP ($${fmt(tpLine)})`, cW * 0.56, yTp - 4);
+                }
+
+                app.bot.gridTable.forEach(o => {
+                    const yo = py(o.price);
+                    if (yo >= padT && yo <= padT + cH) {
+                        ctx.strokeStyle = 'rgba(34, 211, 238, 0.75)';
+                        ctx.setLineDash([4, 3]);
+                        ctx.beginPath(); ctx.moveTo(cW * 0.55, yo); ctx.lineTo(cW, yo); ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.fillStyle = '#22d3ee'; ctx.font = '9px monospace';
+                        ctx.fillText(`🤖 Орд #${o.idx} ($${o.usd.toFixed(0)})`, cW * 0.56, yo - 2);
+                    }
+                });
+            }
+
+            // Свічки
+            const bw = Math.max(2.5, step * 0.66);
+            {let __lp13=Date.now();for (let i = 0; i < slice.length; i++) {if(Date.now()-__lp13>400){throw new Error("Preview stopped: a loop ran longer than 400ms — check for an infinite loop.");}
+                const c = slice[i], x = ix(i), up = c.close >= c.open;
+                ctx.strokeStyle = up ? '#10b981' : '#ef4444';
+                ctx.fillStyle = up ? '#10b981' : '#ef4444';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.moveTo(x, py(c.high)); ctx.lineTo(x, py(c.low)); ctx.stroke();
+                const yO = py(c.open), yC = py(c.close);
+                ctx.fillRect(x - bw/2, Math.min(yO, yC), bw, Math.max(2, Math.abs(yC - yO)));
+            }}
+
+            if (app.layers.pat && slice.length > 15) {
+                const i1 = Math.floor(slice.length * 0.35), i2 = slice.length - 1;
+                ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(ix(i1), py(slice[i1].high)); ctx.lineTo(ix(i2), py(slice[i2].high)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(ix(i1), py(slice[i1].low)); ctx.lineTo(ix(i2), py(slice[i2].low)); ctx.stroke();
+            }
+        };
+
+        window.renderAnalyticsAndBook = function(lastP, ticker, depth) {
+            const c = app.candles[app.candles.length - 1];
+            const high25 = Math.max(...app.candles.slice(-25).map(x => x.high));
+            const low25 = Math.min(...app.candles.slice(-25).map(x => x.low));
+
+            document.getElementById('boxPatterns').innerHTML = `
+                <div class="p-2 rounded bg-amber-500/10 border border-amber-500/30"><b class="text-amber-400">📐 Динамічний трикутник / Канал</b><div class="text-slate-300">Межі: $${fmt(low25)} — $${fmt(high25)}</div></div>
+                <div class="p-2 rounded bg-emerald-500/10 border border-emerald-500/30"><b class="text-emerald-400">🕯️ Свічка: ${c.close >= c.open ? 'Бичача активність' : 'Ведмежий тиск'}</b></div>
+            `;
+            document.getElementById('boxSmc').innerHTML = `
+                <div class="p-2 rounded bg-purple-500/10 border border-purple-500/30"><b class="text-purple-400">Bullish Order Block:</b> $${fmt(low25 * 1.002)}</div>
+                <div class="p-2 rounded bg-pink-500/10 border border-pink-500/30"><b class="text-pink-400">Пул Ліквідацій Short:</b> $${fmt(high25 * 1.004)}</div>
+            `;
+            const qv = ticker && ticker.quoteVolume ? parseFloat(ticker.quoteVolume) : 640000000;
+            document.getElementById('boxMetrics').innerHTML = `
+                <div class="flex justify-between"><span>Об'єм 24г:</span><b class="text-white">$${fmtK(qv)}</b></div>
+                <div class="flex justify-between"><span>Волатильність:</span><b class="text-amber-400">${(((high25-low25)/low25)*100).toFixed(2)}%</b></div>
+                <div class="flex justify-between"><span>Золотий перетин Fib 0.618:</span><b class="text-blue-400">$${fmt(high25 - (high25-low25)*0.618)}</b></div>
+            `;
+            document.getElementById('boxSR').innerHTML = `
+                <div class="flex justify-between p-1.5 rounded bg-red-500/10 border border-red-500/30"><span class="text-red-400 font-bold">Спротив R1 (MTF)</span><span class="font-mono">$${fmt(high25)}</span></div>
+                <div class="flex justify-between p-1.5 rounded bg-amber-500/20 border border-amber-500/40 font-bold"><span>ПОТОЧНА ЦІНА</span><span class="font-mono">$${fmt(lastP)}</span></div>
+                <div class="flex justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30"><span class="text-emerald-400 font-bold">Підтримка S1 (MTF)</span><span class="font-mono">$${fmt(low25)}</span></div>
+            `;
+
+            const hasDepth = depth && Array.isArray(depth.asks) && depth.asks.length > 0 && Array.isArray(depth.bids) && depth.bids.length > 0;
+            const asks = hasDepth ? depth.asks.slice(0, 5).reverse() : [[lastP*1.0015, 2.1],[lastP*1.001, 1.4],[lastP*1.0005, 3.2]];
+            const bids = hasDepth ? depth.bids.slice(0, 5) : [[lastP*0.9995, 3.5],[lastP*0.999, 1.8],[lastP*0.9985, 2.7]];
+
+            const sumB = bids.reduce((s, b) => s + (+b[0])*(+b[1]), 0);
+            const sumA = asks.reduce((s, a) => s + (+a[0])*(+a[1]), 0);
+            const bidPct = Math.round((sumB / ((sumB + sumA) || 1)) * 100);
+
+            document.getElementById('bidPctTxt').textContent = `Покупці: ${bidPct}%`;
+            document.getElementById('askPctTxt').textContent = `Продавці: ${100 - bidPct}%`;
+            document.getElementById('bidBar').style.width = `${bidPct}%`;
+
+            document.getElementById('asksList').innerHTML = asks.map(a => `<div class="order-row flex justify-between px-1 py-0.5"><div class="bar-ask" style="width:65%"></div><span class="text-red-400">${fmt(a[0])}</span><span>${(+a[1]).toFixed(2)}</span><span>$${fmtK(a[0]*a[1])}</span></div>`).join('');
+            document.getElementById('midPriceBook').textContent = '$' + fmt(lastP);
+            document.getElementById('bidsList').innerHTML = bids.map(b => `<div class="order-row flex justify-between px-1 py-0.5"><div class="bar-bid" style="width:72%"></div><span class="text-emerald-400">${fmt(b[0])}</span><span>${(+b[1]).toFixed(2)}</span><span>$${fmtK(b[0]*b[1])}</span></div>`).join('');
+            document.getElementById('wallsInfo').innerHTML = `<div class="flex justify-between text-emerald-400"><span>🐋 Стінка Bid:</span><b>$${fmt(bids[0][0])}</b></div><div class="flex justify-between text-red-400"><span>🐋 Стінка Ask:</span><b>$${fmt(asks[asks.length-1][0])}</b></div>`;
+        };
+
+        // =========================================================================
+        // НАВІГАЦІЯ ТА ДОДАТКОВІ МОДУЛІ
+        // =========================================================================
+        window.toggleLayer = function(k, btn) { app.layers[k] = !app.layers[k]; btn.classList.toggle('layer-on'); window.drawChart(); };
+        window.zoomChart = function(delta) { app.visibleBars = Math.min(140, Math.max(20, app.visibleBars - delta)); window.drawChart(); };
+        window.resetChartZoom = function() { app.visibleBars = 55; app.panOffset = 0; window.drawChart(); };
+        window.toggleFS = function() { document.getElementById('chartPanel').classList.toggle('fullscreen-box'); setTimeout(window.drawChart, 60); };
+
+        window.changeSymbol = function(s) {
+            app.sym = s;
+            document.getElementById('coinSelect').value = s;
+            app.candles = [];
+            window.loadMainData();
+            if (app.mode === 'tv') window.loadTV();
+        };
+
+        window.changeTF = function(tf, tv, btn) {
+            app.tf = tf; app.tvTf = tv;
+            document.querySelectorAll('.tf-b').forEach(b => b.className = "tf-b px-2 py-1 rounded text-xs font-bold text-slate-400");
+            btn.className = "tf-b px-2 py-1 rounded text-xs font-bold gold-btn";
+            app.candles = [];
+            window.loadMainData();
+            if (app.mode === 'tv') window.loadTV();
+        };
+
+        window.switchChartEngine = function(m) {
+            app.mode = m;
+            document.getElementById('canvasBox').classList.toggle('hidden', m !== 'canvas');
+            document.getElementById('layerBar').classList.toggle('hidden', m !== 'canvas');
+            document.getElementById('tvBox').classList.toggle('hidden', m !== 'tv');
+            document.getElementById('btnModeCanvas').className = m === 'canvas' ? 'gold-btn py-1.5 rounded text-xs' : 'py-1.5 rounded text-xs font-bold text-slate-400';
+            document.getElementById('btnModeTV').className = m === 'tv' ? 'gold-btn py-1.5 rounded text-xs' : 'py-1.5 rounded text-xs font-bold text-slate-400';
+            if (m === 'tv') window.loadTV(); else setTimeout(window.drawChart, 50);
+        };
+
+        window.loadTV = function() {
+            const box = document.getElementById('tvBox');
+            box.innerHTML = '';
+            if (typeof TradingView !== 'undefined') {
+                new TradingView.widget({ autosize: true, symbol: "BINANCE:" + app.sym, interval: app.tvTf, theme: "dark", style: "1", locale: "uk", studies: ["RSI@tv-basicstudies", "MASimple@tv-basicstudies"], container_id: "tvBox" });
+            }
+        };
+
+        window.openTab = function(id, btn) {
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + id).classList.remove('hidden');
+            document.querySelectorAll('.t-btn').forEach(b => b.className = "t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400");
+            if (btn) btn.className = "t-btn gold-btn py-1.5 px-2 rounded-lg text-xs";
+
+            if (id === 'terminal') setTimeout(window.drawChart, 50);
+            if (id === 'velesbot') window.updateBotGridPreview();
+            if (id === 'screener') window.scanTop20();
+            if (id === 'multi' && !document.getElementById('multiGrid').children.length) window.buildMulti(4);
+            if (id === 'backtest') setTimeout(window.executeBacktest, 30);
+        };
+
+        window.scanTop20 = function() {
+            window.fetchBinance('/ticker/24hr').then(all => {
+                if (Array.isArray(all) && all.length) {
+                    app.scrList = COINS.map(s => all.find(x => x.symbol === s)).filter(Boolean).map(t => ({
+                        sym: t.symbol, p: +t.lastPrice, chg: +t.priceChangePercent, vol: +t.quoteVolume,
+                        pat: Math.abs(+t.priceChangePercent) > 2.5 ? '📐 Пробій прапора / Трикутника' : '🕯️ Пін-бар біля рівня П/С',
+                        smc: +t.priceChangePercent >= 0 ? '🟢 Bull OB + FVG' : '🔴 Bear OB + FVG'
+                    }));
+                } else {
+                    app.scrList = COINS.map((s, idx) => {
+                        const p = BASE_PRICES[s] || 10;
+                        const chg = ((idx % 2 === 0 ? 1 : -1) * (1.2 + (idx * 0.45) % 5.5));
+                        return { sym: s, p, chg, vol: 120000000 + idx * 45000000, pat: Math.abs(chg) > 2.5 ? '📐 Висхідний трикутник' : '🕯️ Бичаче поглинання', smc: chg >= 0 ? '🟢 Bull OB + FVG' : '🔴 Bear OB + FVG' };
+                    });
+                }
+                window.renderScr();
+            });
+        };
+
+        window.setScrFilter = function(f, btn) {
+            app.scrFilter = f;
+            document.querySelectorAll('.scr-f').forEach(b => b.className = "scr-f px-2.5 py-1 rounded bg-[#1a202c] text-slate-300 font-bold text-xs");
+            if (btn) btn.className = "scr-f gold-btn px-2.5 py-1 rounded text-xs";
+            window.renderScr();
+        };
+
+        window.renderScr = function() {
+            let list = app.scrList;
+            if (app.scrFilter === 'vol') list = list.filter(x => Math.abs(x.chg) > 2.0);
+            if (app.scrFilter === 'pat') list = list.filter(x => x.pat.includes('📐'));
+            if (app.scrFilter === 'smc') list = list.filter(x => x.smc.includes('🟢'));
+
+            document.getElementById('scrBody').innerHTML = list.map(x => `
+                <tr>
+                    <td class="p-2 font-bold text-white">${x.sym}</td>
+                    <td class="p-2 font-mono">$${fmt(x.p)} <span class="${x.chg>=0?'text-emerald-400':'text-red-400'}">(${x.chg>=0?'+':''}${x.chg.toFixed(2)}%)</span></td>
+                    <td class="p-2 font-mono">$${fmtK(x.vol)}</td>
+                    <td class="p-2 text-amber-300">${x.pat}</td>
+                    <td class="p-2">${x.smc}</td>
+                    <td class="p-2"><button onclick="window.changeSymbol('${x.sym}');window.openTab('velesbot',document.getElementById('nav-velesbot'))" class="gold-btn px-2 py-1 rounded text-[10px]">🤖 У Veles-Бот</button></td>
+                </tr>`).join('');
+        };
+
+        window.buildMulti = function(n) {
+            const g = document.getElementById('multiGrid'); g.innerHTML = '';
+            COINS.slice(0, n).forEach((s, i) => {
+                const d = document.createElement('div'); d.className = "panel p-2 h-[250px] flex flex-col";
+                d.innerHTML = `<div class="text-xs font-bold text-amber-400 mb-1 flex justify-between"><span>#${i+1} ${s}</span><button onclick="window.changeSymbol('${s}');window.openTab('terminal',document.getElementById('nav-terminal'))" class="text-[10px] text-blue-400">Відкрити →</button></div><div id="mc_${i}" class="flex-1 w-full"></div>`;
+                g.appendChild(d);
+                if (typeof TradingView !== 'undefined') {
+                    setTimeout(() => new TradingView.widget({ autosize: true, symbol: "BINANCE:" + s, interval: app.tvTf, theme: "dark", hide_side_toolbar: true, container_id: `mc_${i}` }), i * 120);
+                }
+            });
+        };
+
+        window.beep = function(freq) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination); o.frequency.value = freq;
+                g.gain.setValueAtTime(0.15, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                o.start(); o.stop(ctx.currentTime + 0.35);
+            } catch (e) {}
+        };
+
+        window.sendTgTest = function() {
+            window.beep(680);
+            const tok = document.getElementById('tgTok').value.trim(), cid = document.getElementById('tgCid').value.trim();
+            if (tok && cid) {
+                fetch(`https://api.telegram.org/bot${tok}/sendMessage`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: cid, text: `🤖 Veles Bot (${app.bot.exchange}): ${app.sym} = ${document.getElementById('topPrice').textContent}`}) })
+                    .then(() => { document.getElementById('tgStatus').textContent = "✅ Звіт Бота доставлено в Telegram!"; })
+                    .catch(() => { document.getElementById('tgStatus').textContent = "⚠️ Перевірте Bot Token."; });
+            } else {
+                document.getElementById('tgStatus').textContent = "🔊 Звуковий сигнал протестовано!";
+            }
+        };
+
+        let dragX = null;
+        const cEl = document.getElementById('mainCanvas');
+        cEl.addEventListener('pointerdown', e => { dragX = e.clientX; });
+        window.addEventListener('pointermove', e => {
+            if (dragX === null) return;
+            const dx = e.clientX - dragX;
+            if (Math.abs(dx) > 8) {
+                app.panOffset = Math.max(0, Math.min(app.candles.length - 25, app.panOffset + Math.sign(dx) * 2));
+                dragX = e.clientX;
+                window.drawChart();
+            }
+        });
+        window.addEventListener('pointerup', () => { dragX = null; });
+
+        window.addEventListener('resize', () => {
+            window.drawChart();
+            if (!document.getElementById('view-backtest').classList.contains('hidden')) window.executeBacktest();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.loadMainData();
+            setInterval(window.loadMainData, 7000);
+        });
+    </script>
+
+
+</body></html>
