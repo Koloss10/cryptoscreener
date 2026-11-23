@@ -12,19 +12,6 @@
         const TIME_EXIT_BARS = 16;            // вихід по часу в бектесті
         const LIQ_MARGIN_FRACTION = 0.9;      // ліквідація при втраті 90% маржі
 
-        const EXCHANGES_META = {
-            'Binance': { endpoint: 'https://fapi.binance.com' },
-            'Bybit':   { endpoint: 'https://api.bybit.com/v5' },
-            'OKX':     { endpoint: 'https://www.okx.com/api/v5' },
-            'Bitget':  { endpoint: 'https://api.bitget.com/api/v2' },
-            'BingX':   { endpoint: 'https://open-api.bingx.com' },
-            'Gate.io': { endpoint: 'https://api.gateio.ws/api/v4' },
-            'KuCoin':  { endpoint: 'https://api-futures.kucoin.com' },
-            'MEXC':    { endpoint: 'https://contract.mexc.com/api/v1' },
-            'HTX':     { endpoint: 'https://api.hbdm.com' },
-            'Kraken':  { endpoint: 'https://futures.kraken.com/derivatives' }
-        };
-
         const MOD_NAMES = {
             smc: '🧠 SMC (OB/FVG)', sr: '🎯 Рівні П/С', fib: '🌀 Фібо 0.618', pa: '🕯️ Свічки PA',
             ta: '📐 Фігури ТА', liq: '🧲 Ліквідність', rsi: '📊 RSI(14)', st: '📈 Тренд EMA20',
@@ -34,7 +21,7 @@
 
         window.app = {
             sym: 'BTCUSDT', tf: '1h', tvTf: '60', mode: 'canvas',
-            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, isDemo: false, scrDemo: false,
+            candles: [], visibleBars: 55, panOffset: 0, reqId: 0, inFlightKey: null, isDemo: false, scrDemo: false,
             layers: { mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
             btMods: { smc: true, sr: true, fib: true, pa: false, ta: false, liq: false, rsi: true, st: false, macd: false, bb: false, ema: false, ichi: false, vwap: false, stoch: false },
             bot: {
@@ -80,9 +67,11 @@
                 if (!r.ok) throw new Error(f);
                 return r.text();
             }))).then(([html, css, code]) => {
+                const scriptClose = '<' + '/script>';
+                const safeCode = code.replace(/<\/script/gi, '<\\/script');
                 const out = html
                     .replace('<link rel="stylesheet" href="styles.css">', () => `<style>\n${css}</style>`)
-                    .replace('<script src="app.js" defer></script>', () => `<script>\n${code}<\/script>`);
+                    .replace('<script src="app.js" defer>' + scriptClose, () => '<script>\n' + safeCode + scriptClose);
                 const url = URL.createObjectURL(new Blob([out], { type: 'text/html;charset=utf-8' }));
                 const a = document.createElement('a');
                 a.href = url;
@@ -134,7 +123,10 @@
         };
 
         window.loadMainData = function() {
-            const reqId = ++app.reqId;   // нова зміна монети/ТФ робить попередні відповіді застарілими
+            const key = `${app.sym}|${app.tf}`;
+            if (app.inFlightKey === key) return;   // запит для цієї пари вже летить — не скидаємо його
+            app.inFlightKey = key;
+            const reqId = app.reqId;               // changeSymbol/changeTF збільшують reqId і роблять відповідь застарілою
 
             if (!app.candles.length) {
                 app.candles = window.generateFallbackCandles(app.sym, CANDLE_LIMIT);
@@ -172,7 +164,8 @@
                 if (!document.getElementById('view-backtest').classList.contains('hidden')) {
                     window.executeBacktest();
                 }
-            }).catch(err => console.error('loadMainData failed:', err));
+            }).catch(err => console.error('loadMainData failed:', err))
+              .finally(() => { if (reqId === app.reqId) app.inFlightKey = null; });
         };
 
         // =========================================================================
@@ -927,12 +920,14 @@
             app.sym = s;
             document.getElementById('coinSelect').value = s;
             app.candles = [];
+            app.reqId++; app.inFlightKey = null;
             window.loadMainData();
             if (app.mode === 'tv') window.loadTV();
         };
 
         window.changeTF = function(tf, tv, btn) {
             app.tf = tf; app.tvTf = tv;
+            app.reqId++; app.inFlightKey = null;
             document.querySelectorAll('.tf-b').forEach(b => b.className = "tf-b px-2 py-1 rounded text-xs font-bold text-slate-400");
             btn.className = "tf-b px-2 py-1 rounded text-xs font-bold gold-btn";
             app.candles = [];

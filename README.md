@@ -20,7 +20,7 @@ python3 -m http.server 8080   # потім відкрити http://localhost:808
 | `index.html` | розмітка |
 | `styles.css` | скомпільований Tailwind + власні стилі (CDN не потрібен) |
 | `app.js` | уся логіка: дані, графік, бот, бектест, скрінер |
-| `tests/smoke.js` | Playwright-тест із підміною мережі (`npm i && npm test`) |
+| `tests/smoke.js` | Playwright-тест із підміною мережі (`npm i && npx playwright install chromium && npm test`) |
 
 ## Важливо знати
 

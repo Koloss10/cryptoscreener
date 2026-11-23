@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoScreener v6.0 — Veles Bot, Top-10 API &amp; DCA Backtester</title>
+    <title>CryptoScreener v6.0 — Veles DCA Simulator, Screener &amp; Backtester</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://s3.tradingview.com/tv.js" defer></script>
 </head>
@@ -18,7 +18,7 @@
                         <h1 class="font-extrabold text-base text-white">CryptoScreener</h1>
                         <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">v6.0 VELES</span>
                     </div>
-                    <p class="text-[11px] text-slate-400">Veles DCA Боти • Топ-10 Бірж API • Комбо-Бектестер (MAE/MFE)</p>
+                    <p class="text-[11px] text-slate-400">Симулятор Veles DCA • Скрінер • Комбо-Бектестер (MAE/MFE)</p>
                 </div>
             </div>
             <div class="text-right">
@@ -54,7 +54,7 @@
     <!-- НАВІГАЦІЯ ВКЛАДОК (7 РОЗДІЛІВ) -->
     <nav class="grid grid-cols-3 sm:grid-cols-7 gap-1.5 mb-2.5 bg-[#131722] p-1.5 rounded-xl border border-[#1e2433]">
         <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📈 Термінал</button>
-        <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот &amp; API</button>
+        <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот (симуляція)</button>
         <button id="nav-backtest" onclick="window.openTab('backtest',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-amber-300">🧪 Veles Бектест</button>
         <button id="nav-screener" onclick="window.openTab('screener',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔍 Топ-20</button>
         <button id="nav-multi" onclick="window.openTab('multi',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🎛️ Мульти (10)</button>
@@ -165,7 +165,7 @@
     <section id="view-velesbot" class="tab-view hidden space-y-3">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
 
-            <!-- ЛІВА ЧАСТИНА (7 колонок): Підключення API Топ-10 Бірж + Налаштування Бота Veles -->
+            <!-- ЛІВА ЧАСТИНА (7 колонок): Вибір біржі (симуляція) + Налаштування Бота Veles -->
             <div class="lg:col-span-7 space-y-3">
 
                 <!-- 1. Шлюз підключення до Топ-10 Крипто-Бірж через API -->
@@ -194,16 +194,8 @@
                         <button onclick="window.selectExchange('Kraken',this)" class="ex-btn bg-[#1a202c] text-slate-300 py-1.5 px-2 rounded-lg text-xs font-bold">10. Kraken</button>
                     </div>
 
-                    <!-- Поля API ключів та Режим -->
+                    <!-- Ринок та комісія -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                        <div>
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">Ринок та Маржа</label>
-                            <select id="botMarketType" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
-                                <option value="futures_isolated">Futures USDT-M (Ізольована)</option>
-                                <option value="futures_cross">Futures USDT-M (Крос)</option>
-                                <option value="spot">Spot (Спотовий ринок)</option>
-                            </select>
-                        </div>
                         <div>
                             <label class="text-[10px] text-slate-400 font-bold block mb-1">Комісія біржі (%)</label>
                             <input type="number" id="botExchangeFee" value="0.05" step="0.01" onchange="window.updateBotGridPreview()" class="w-full bg-[#131722] text-white text-xs font-bold p-2 rounded border border-slate-700">
@@ -468,7 +460,7 @@
                     <button data-mod="ema" onclick="window.toggleBtMod('ema')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🌊 EMA Ribbon (20/50)</button>
                     <button data-mod="ichi" onclick="window.toggleBtMod('ichi')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">☁️ Хмара Ішімоку</button>
                     <button data-mod="vwap" onclick="window.toggleBtMod('vwap')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">💎 VWAP + Сплеск Об'єму</button>
-                    <button data-mod="stoch" onclick="window.toggleBtMod('stoch')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🎯 Stochastic RSI</button>
+                    <button data-mod="stoch" onclick="window.toggleBtMod('stoch')" class="bt-chip px-2.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs font-bold transition">🎯 Стохастик (9)</button>
                 </div>
             </div>
         </div>
@@ -607,7 +599,7 @@
         <h2 class="font-extrabold text-sm text-white">📚 Довідник архітектури Veles.finance у CryptoScreener v6.0</h2>
         <p><b class="text-emerald-400">🤖 Сітка ордерів (Overlap % + Мартингейл + Логарифм):</b> Коли бот відкриває угоду за сигналами індикаторів, він виставляє страхувальну сітку лімітних ордерів на випадок руху ціни проти позиції. Кожен наступний ордер має більший обсяг (за рахунок <i>Мартингейлу %</i>), що дозволяє сильно наблизити середню ціну входу до поточної ціни і закрити угоду в плюс навіть на невеликому відскоку.</p>
         <p><b class="text-amber-400">📐 Логарифмічний розподіл цін:</b> Якщо значення <code>&gt; 1.0</code>, перші ордери сітки розташовуються ближче до ціни входу, а останні — ширше (ідеально для високої волатильності). Якщо <code>&lt; 1.0</code> — ордери щільніше концентруються в кінці сітки біля сильних рівнів підтримки.</p>
-        <p><b class="text-cyan-400">🛡️ Що таке % MAE у Бектестері Veles:</b> <i>Maximum Adverse Excursion</i> — це максимальне просідання ціни проти відкритої позиції бота до моменту її закриття. За правилами ризик-менеджменту Veles, на балансі біржі рекомендовано тримати підтримуючу маржу у розмірі <code>2 × MAE</code>, щоб уникнути ліквідації на різких срібних тінях (сквізах).</p>
+        <p><b class="text-cyan-400">🛡️ Що таке % MAE у Бектестері Veles:</b> <i>Maximum Adverse Excursion</i> — це максимальне просідання ціни проти відкритої позиції бота до моменту її закриття. Чим більший MAE, тим більший запас маржі потрібен, щоб не ліквідуватися на різких тінях (сквізах). Дивіться також «Макс. просадка капіталу» — це просадка всього рахунку, а не однієї угоди.</p>
     </section>
     <script src="app.js" defer></script>
 </body>

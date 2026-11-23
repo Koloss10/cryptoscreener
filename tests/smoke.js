@@ -1,6 +1,8 @@
 // Smoke-тест у headless Chromium з підміною мережі: node tests/smoke.js
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
+const http = require('node:http');
 const { chromium } = require('playwright');
 
 const PAGE = 'file://' + path.resolve(__dirname, '..', 'index.html');
@@ -82,6 +84,45 @@ async function run(name, fn, browser) {
         await page.evaluate(() => window.sendTgTest()); await page.waitForTimeout(400);
         assert.match(await page.textContent('#tgStatus'), /Unauthorized/);
     }, browser);
+
+    await run('refresh tick does not duplicate an in-flight request', async page => {
+        let klineCalls = 0;
+        await page.route('**/api/v3/**', async route => {
+            const u = new URL(route.request().url());
+            if (u.pathname.endsWith('/klines')) { klineCalls++; await new Promise(r => setTimeout(r, 500)); }
+            await route.abort();
+        });
+        await page.goto(PAGE); await page.waitForTimeout(100);
+        const before = klineCalls;
+        await page.evaluate(() => { window.loadMainData(); window.loadMainData(); });
+        await page.waitForTimeout(100);
+        assert.equal(klineCalls, before);   // обидва виклики пропущено: запит для цієї пари вже летить
+    }, browser);
+
+    // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)
+    const server = http.createServer((req, res) => {
+        const f = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url.split('?')[0]);
+        fs.readFile(f, (err, data) => { if (err) { res.writeHead(404); res.end(); } else { res.writeHead(200); res.end(data); } });
+    }).listen(0);
+    const port = server.address().port;
+    await run('download bundles a working standalone html', async page => {
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.goto('http://127.0.0.1:' + port + '/'); await page.waitForTimeout(500);
+        const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => window.downloadAppFile())]);
+        const out = path.join(require('node:os').tmpdir(), 'cs_bundle_test.html');
+        await dl.saveAs(out);
+        const bundle = await browser.newPage();
+        const errs = [];
+        bundle.on('pageerror', e => errs.push(e.message));
+        await bundle.route('**/api/v3/**', r => r.abort());
+        await bundle.goto('file://' + out); await bundle.waitForTimeout(1200);
+        assert.deepEqual(errs, []);
+        assert.ok(await bundle.evaluate(() => app.candles.length) > 0);
+        assert.equal(await bundle.evaluate(() => document.querySelectorAll('script[src]').length), 1); // лише tv.js
+        await bundle.close();
+        fs.unlinkSync(out);
+    }, browser);
+    server.close();
 
     await browser.close();
 })();
