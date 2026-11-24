@@ -5,12 +5,7 @@
     const STORE_KEY = 'cs_live_v1';
     // Підсвітка за замовчуванням (до першого збереження власних правил): NATR ≥ 2%, сплеск обсягу ≥ ×3
     const DEFAULT_RULES = [{ key: 'natr5', op: '>=', value: 2 }, { key: 'spike', op: '>=', value: 3 }];
-    // Одиниці колонок для правил: 1 одиниця в полі = unit «сирих» (фандинг зберігається часткою, обсяги — в доларах)
-    const UNITS = {
-        price: { unit: 1, hint: '$' }, chg24: { unit: 1, hint: '%' }, chg5: { unit: 1, hint: '%' }, chg15: { unit: 1, hint: '%' }, chg60: { unit: 1, hint: '%' },
-        vol1h: { unit: 1e6, hint: 'млн $' }, vol24: { unit: 1e6, hint: 'млн $' }, oi: { unit: 1e6, hint: 'млн $' }, wallUsd: { unit: 1e6, hint: 'млн $' },
-        spike: { unit: 1, hint: '×' }, natr5: { unit: 1, hint: '%' }, funding: { unit: 0.01, hint: '%' }, wallDist: { unit: 1, hint: '%' }
-    };
+    const UNITS = window.Metrics.RULE_UNITS;       // одиниці колонок для правил (спільні з оповіщеннями)
     const RULE_KEYS = Object.keys(UNITS);
     const STATUS_TEXT = { connecting: 'Підключення…', live: 'Наживо', reconnecting: 'Перепідключення…', error: 'Помилка' };
     const BINANCE_COLUMNS = [

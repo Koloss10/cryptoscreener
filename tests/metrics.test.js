@@ -138,3 +138,8 @@ test('ruleHit applies rules only to their own column and never to missing values
     assert.equal(M.ruleHit(rules, 'natr5', null), false);
     assert.equal(M.ruleHit(rules, 'natr5', NaN), false);
 });
+
+test('RULE_UNITS gives every ruleable column a positive unit and a hint', () => {
+    for (const [key, u] of Object.entries(M.RULE_UNITS)) { assert.ok(u.unit > 0, key); assert.ok(u.hint, key); }
+    assert.equal(M.RULE_UNITS.funding.unit, 0.01);          // фандинг зберігається часткою, у полі — у %
+});

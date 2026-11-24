@@ -1118,6 +1118,99 @@ async function run(name, fn, browser) {
         assert.equal(await page.evaluate(() => [app.sym, app.tf].join()), sym0 + ',1d');         // термінал закритий — клавіші ігноруються
     }, browser);
 
+    // --- вкладка «Сигнали»: рядки скринера підміняємо вручну, щоб керувати переходами умов ---
+    const sigSetup = async (page, { permission = 'granted' } = {}) => {
+        await page.addInitScript(perm => {
+            window.__notes = [];
+            window.Notification = class { constructor(title, o) { window.__notes.push([title, o && o.body]); } static get permission() { return perm; } static requestPermission() { return Promise.resolve(perm); } };
+        }, permission);
+        await liveSetup(page);
+        await page.evaluate(() => {
+            window.__rows = [];
+            window.liveFeed.getRows = () => window.__rows;
+            window.openTab('sig', document.getElementById('nav-sig'));
+        });
+    };
+    const setRows = (page, rows) => page.evaluate(r => { window.__rows = r; window.__signalsTick(); }, rows);
+    const sigAdd = async (page, { col = 'chg5', op = '>=', val, sym = '' }) => {
+        await page.selectOption('#sgCol', col); await page.selectOption('#sgOp', op);
+        await page.fill('#sgVal', String(val)); await page.fill('#sgSym', sym);
+        await page.click('#sgAdd');
+    };
+    const row = (symbol, chg5) => ({ symbol, chg5 });
+
+    await run('signals: a rule fires when its condition turns true (not before, not while it holds), logs and notifies once', async page => {
+        await sigSetup(page);
+        await sigAdd(page, { val: 1, sym: 'btc' });
+        assert.match(await page.textContent('#sgRules'), /BTC: 5хв ≥ 1 %/);
+        await page.check('#sgNotify');
+        await setRows(page, [row('BTCUSDT', 0.5), row('ETHUSDT', 9)]);                               // заряджання; ETH не підпадає (правило лише для BTC)
+        assert.match(await page.textContent('#sgLog'), /Сигналів ще не було/);
+        await setRows(page, [row('BTCUSDT', 1.5)]);
+        assert.match(await page.textContent('#sgLog'), /BTC/);
+        assert.match(await page.textContent('#sgLog'), /5хв 1\.5 %/);
+        assert.equal(await page.evaluate(() => window.__notes.length), 1);
+        assert.match(await page.evaluate(() => window.__notes[0][1]), /умова: ≥ 1/);
+        await setRows(page, [row('BTCUSDT', 2)]);                                                      // умова тримається — тиша
+        assert.equal(await page.evaluate(() => window.__notes.length), 1);
+        assert.equal(await page.locator('#sgLog tr').count(), 1);
+    }, browser);
+
+    await run('signals: adding a rule that is already true for the current coins gives no burst', async page => {
+        await sigSetup(page);
+        await page.evaluate(() => { window.__rows = [{ symbol: 'BTCUSDT', chg5: 5 }, { symbol: 'ETHUSDT', chg5: 6 }]; });
+        await sigAdd(page, { val: 1 });
+        await page.evaluate(() => { window.__signalsTick(); window.__signalsTick(); });
+        assert.match(await page.textContent('#sgLog'), /Сигналів ще не було/);
+    }, browser);
+
+    await run('signals: many events in one tick give three notifications plus one summary', async page => {
+        await sigSetup(page);
+        await sigAdd(page, { val: 1 });
+        await page.check('#sgNotify');
+        const syms = ['AAAUSDT', 'BBBUSDT', 'CCCUSDT', 'DDDUSDT', 'EEEUSDT'];
+        await setRows(page, syms.map(s => row(s, 0)));
+        await setRows(page, syms.map(s => row(s, 3)));
+        assert.equal(await page.locator('#sgLog tr').count(), 5);
+        const notes = await page.evaluate(() => window.__notes);
+        assert.equal(notes.length, 4);
+        assert.match(notes[3][1], /Ще 2 сигнали/);
+        assert.deepEqual(await page.evaluate(() => [1, 2, 4, 5, 11, 12, 14, 21, 22, 25].map(window.__signalsPlural)),
+            ['сигнал', 'сигнали', 'сигнали', 'сигналів', 'сигналів', 'сигналів', 'сигналів', 'сигнал', 'сигнали', 'сигналів']);
+    }, browser);
+
+    await run('signals: rules, log and switches survive a reload; removing a rule and clearing the log are saved', async page => {
+        await sigSetup(page);
+        await sigAdd(page, { col: 'spike', val: 3 });
+        await sigAdd(page, { col: 'funding', op: '<=', val: -0.05, sym: 'SOLUSDT' });
+        const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('cs_signals_v1')));
+        assert.deepEqual(saved.rules.map(r => [r.key, r.op, r.value, r.symbol]), [['spike', '>=', 3, ''], ['funding', '<=', -0.0005, 'SOLUSDT']]);
+        await page.uncheck('#sgSound');
+        await page.reload(); await page.waitForTimeout(500);
+        await page.evaluate(() => window.openTab('sig', document.getElementById('nav-sig')));
+        assert.equal(await page.locator('#sgRules [data-rm]').count(), 2);
+        assert.equal(await page.isChecked('#sgSound'), false);
+        await page.click('#sgRules [data-rm]');
+        assert.equal(await page.locator('#sgRules [data-rm]').count(), 1);
+        assert.equal((await page.evaluate(() => JSON.parse(localStorage.getItem('cs_signals_v1')))).rules.length, 1);
+    }, browser);
+
+    await run('signals: empty value, a duplicate and a broken coin add nothing; blocked notifications are explained', async page => {
+        await sigSetup(page, { permission: 'denied' });
+        await page.selectOption('#sgCol', 'chg5'); await page.click('#sgAdd');
+        assert.equal(await page.locator('#sgRules [data-rm]').count(), 0);
+        await sigAdd(page, { val: 1 });
+        await sigAdd(page, { val: 1 });
+        assert.equal(await page.locator('#sgRules [data-rm]').count(), 1);
+        assert.match(await page.textContent('#sgMsg'), /вже є/);
+        await sigAdd(page, { val: 2, sym: '!!' });
+        assert.equal(await page.locator('#sgRules [data-rm]').count(), 1);                        // не стає правилом «будь-яка монета»
+        assert.match(await page.textContent('#sgMsg'), /Невірна назва монети/);
+        await page.click('#sgNotify'); await page.waitForTimeout(100);
+        assert.equal(await page.isChecked('#sgNotify'), false);                                    // дозволу немає — перемикач сам повертається
+        assert.match(await page.textContent('#sgPerm'), /заблоковано/);
+    }, browser);
+
     await run('TradingView script is not loaded with the page, only on demand', async page => {
         const asked = [];
         page.on('request', r => { if (r.url().includes('tradingview.com')) asked.push(r.url()); });

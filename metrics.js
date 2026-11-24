@@ -122,6 +122,13 @@
         return { time: k.t, open: +k.o, high: +k.h, low: +k.l, close: +k.c, vol: +k.v, quote: +k.q };
     }
 
+    // Одиниці колонок для правил: 1 одиниця в полі = unit «сирих» (фандинг зберігається часткою, обсяги — в доларах)
+    const RULE_UNITS = {
+        price: { unit: 1, hint: '$' }, chg24: { unit: 1, hint: '%' }, chg5: { unit: 1, hint: '%' }, chg15: { unit: 1, hint: '%' }, chg60: { unit: 1, hint: '%' },
+        vol1h: { unit: 1e6, hint: 'млн $' }, vol24: { unit: 1e6, hint: 'млн $' }, oi: { unit: 1e6, hint: 'млн $' }, wallUsd: { unit: 1e6, hint: 'млн $' },
+        spike: { unit: 1, hint: '×' }, natr5: { unit: 1, hint: '%' }, funding: { unit: 0.01, hint: '%' }, wallDist: { unit: 1, hint: '%' }
+    };
+
     // Правила підсвітки: { key, op: '>=' | '<=', value } у «сирих» одиницях колонки. Невалідні відкидаємо, дублі прибираємо.
     const RULE_OPS = { '>=': (v, x) => v >= x, '<=': (v, x) => v <= x };
     const MAX_RULES = 12;
@@ -141,7 +148,7 @@
     }
     const ruleHit = (rules, key, v) => typeof v === 'number' && Number.isFinite(v) && rules.some(r => r.key === key && RULE_OPS[r.op](v, r.value));
 
-    const api = { MAX_RULES, normalizeRules, ruleHit, aggregate, natr, pctChange, quoteVolume, volumeSpike, buildRow, filterRows, sortRows, applyKline, parseKline };
+    const api = { RULE_UNITS, MAX_RULES, normalizeRules, ruleHit, aggregate, natr, pctChange, quoteVolume, volumeSpike, buildRow, filterRows, sortRows, applyKline, parseKline };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.Metrics = api;
 })(typeof window !== 'undefined' ? window : globalThis);

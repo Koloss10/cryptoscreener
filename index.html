@@ -70,6 +70,7 @@
         <button id="nav-live" onclick="window.openTab('live',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📡 Скринер</button>
         <button id="nav-dens" onclick="window.openTab('dens',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🧱 Плотності</button>
         <button id="nav-form" onclick="window.openTab('form',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🎯 Формації</button>
+        <button id="nav-sig" onclick="window.openTab('sig',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🔔 Сигнали</button>
         <button id="nav-cmp" onclick="window.openTab('cmp',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">⚖️ Порівняння</button>
         <button id="nav-trade" onclick="window.openTab('trade',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">💼 Торгівля</button>
         <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📈 Термінал</button>
@@ -154,6 +155,29 @@
             </table>
         </div>
         <p class="lv-note">Детектор шукає сигнали на закритих 1-хвилинних свічках 40 монет зі «Скринера», поки ця сторінка відкрита; історія й статистика зберігаються лише в цьому браузері (до 500 сигналів). Результат — за наступними свічками, до 60 хв: якщо стоп і тейк у межах однієї свічки, рахується стоп; комісії й проковзування не враховані; «невідомо» — коли свічок для перевірки вже немає. «Відскок від плотності» працює лише коли відкрито «Плотності», «Формації» або «Термінал» (інакше стіни не оновлюються й ігноруються). Правила й пороги — мої власні, не Digash; вони не доведені як прибуткові. Це аналітика й навчальна статистика, а не рекомендація.</p>
+    </section>
+
+    <section id="view-sig" class="tab-view hidden panel p-3.5">
+        <div class="lv-top"><h2>🔔 Сигнали по метриках Binance Futures</h2><span id="sgCount" class="lv-mu" style="font-size:12px"></span></div>
+        <div class="lv-filters" role="group" aria-label="Нове правило сигналу">
+            <label>Метрика<select id="sgCol"></select></label>
+            <label>Умова<select id="sgOp"><option value="&gt;=">не менше (≥)</option><option value="&lt;=">не більше (≤)</option></select></label>
+            <label>Значення<input id="sgVal" type="number" step="any" inputmode="decimal"></label>
+            <label>Монета (порожньо — будь-яка)<input id="sgSym" placeholder="BTC, SOLUSDT…" autocomplete="off" spellcheck="false"></label>
+            <div class="lv-row" style="align-self:end;margin:0"><button type="button" id="sgAdd" class="lv-btn lv-on">Додати правило</button></div>
+        </div>
+        <p id="sgMsg" class="lv-note lv-warn" role="status"></p>
+        <div class="lv-row" id="sgRules" aria-label="Правила сигналів"></div>
+        <div class="lv-filters">
+            <label class="lv-check"><input id="sgSound" type="checkbox"> Звук при сигналі</label>
+            <label class="lv-check"><input id="sgNotify" type="checkbox"> Сповіщення ПК / телефона</label>
+            <div class="lv-row" style="align-self:end;margin:0"><button type="button" id="sgClear" class="lv-btn">Очистити журнал</button></div>
+        </div>
+        <p id="sgPerm" class="lv-note lv-warn" role="status"></p>
+        <div class="lv-wrap">
+            <table class="lv-table"><thead><tr><th>Час</th><th>Монета</th><th>Що сталося</th></tr></thead><tbody id="sgLog"></tbody></table>
+        </div>
+        <p class="lv-note">Сигнал спрацьовує, коли умова ЩОЙНО стала істинною для монети (не повторюється, поки умова тримається), і не частіше ніж раз на 10 хв для одного правила й монети. При додаванні правила монети, що вже відповідають умові, сигналу не дають. Правила діють на 40 найліквідніших монет зі «Скринера» Binance Futures і працюють лише поки ця сторінка відкрита (вкладка може бути у фоні, але браузер не повинен її «присипляти»). Telegram тут немає. Журнал (до 100) і правила зберігаються в цьому браузері. Це аналітика, а не рекомендація.</p>
     </section>
 
     <section id="view-cmp" class="tab-view hidden panel p-3.5">
@@ -758,6 +782,7 @@
     <script src="feed.js" defer></script>
     <script src="okx-source.js" defer></script>
     <script src="compare-core.js" defer></script>
+    <script src="alerts-core.js" defer></script>
     <script src="density.js" defer></script>
     <script src="density-feed.js" defer></script>
     <script src="formations.js" defer></script>
@@ -767,6 +792,7 @@
     <script src="live.js" defer></script>
     <script src="dens.js" defer></script>
     <script src="compare.js" defer></script>
+    <script src="alerts.js" defer></script>
     <script src="hotkeys.js" defer></script>
     <script src="form.js" defer></script>
     <script src="trade.js" defer></script>
