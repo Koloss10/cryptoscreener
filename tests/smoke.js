@@ -1087,6 +1087,22 @@ async function run(name, fn, browser) {
         fs.readFile(f, (err, data) => { if (err) { res.writeHead(404); res.end(); } else { res.writeHead(200); res.end(data); } });
     }).listen(0);
     const port = server.address().port;
+    await run('installable site: manifest and icons are served next to the page and are linked from it', async page => {
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.goto('http://127.0.0.1:' + port + '/'); await page.waitForTimeout(300);
+        const res = await page.evaluate(async () => {
+            const link = rel => document.querySelector(`link[rel="${rel}"]`).href;
+            const mUrl = link('manifest');
+            const manifest = await fetch(mUrl).then(r => r.json());
+            const urls = [link('apple-touch-icon'), ...manifest.icons.map(i => new URL(i.src, mUrl).href)];
+            const codes = await Promise.all(urls.map(u => fetch(u).then(r => r.status)));
+            return { name: manifest.short_name, codes, title: document.title };
+        });
+        assert.equal(res.name, 'CryptoScreener');
+        assert.ok(res.codes.length >= 4 && res.codes.every(c => c === 200), JSON.stringify(res.codes));
+        assert.equal(res.title, 'CryptoScreener — скринер криптовалют');
+    }, browser);
+
     await run('download bundles a working standalone html', async page => {
         await page.route('**/api/v3/**', r => r.abort());
         await page.goto('http://127.0.0.1:' + port + '/'); await page.waitForTimeout(500);

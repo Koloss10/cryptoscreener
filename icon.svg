@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="CryptoScreener">
+  <rect width="512" height="512" rx="112" fill="#0B0D12"/>
+  <rect x="40" y="40" width="432" height="432" rx="84" fill="none" stroke="#22D3EE" stroke-opacity=".28" stroke-width="6"/>
+  <!-- свічки: три тіла різної висоти й тінь -->
+  <g stroke-linecap="round">
+    <line x1="168" y1="170" x2="168" y2="372" stroke="#22D3EE" stroke-width="12"/>
+    <rect x="140" y="214" width="56" height="112" rx="10" fill="#22D3EE"/>
+    <line x1="256" y1="130" x2="256" y2="344" stroke="#E6E9F0" stroke-width="12"/>
+    <rect x="228" y="168" width="56" height="130" rx="10" fill="#E6E9F0"/>
+    <line x1="344" y1="196" x2="344" y2="392" stroke="#22D3EE" stroke-width="12"/>
+    <rect x="316" y="246" width="56" height="106" rx="10" fill="#22D3EE" fill-opacity=".55"/>
+  </g>
+  <!-- «плотність»: горизонтальна лінія рівня -->
+  <line x1="96" y1="420" x2="416" y2="420" stroke="#22D3EE" stroke-opacity=".5" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 22"/>
+</svg>
