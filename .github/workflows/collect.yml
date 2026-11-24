@@ -9,16 +9,22 @@ concurrency:
   group: collect
   cancel-in-progress: false
 jobs:
-  okx:
+  collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Collect OKX public data (no account or key)
-        run: node collector/okx.mjs > "$RUNNER_TEMP/okx.json"
+      - name: Collect public data (no accounts or keys); one exchange failing does not stop the others
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          ok=0
+          for ex in okx bitget gate mexc; do
+            if node collector/run.mjs "$ex" "$RUNNER_TEMP/out"; then ok=$((ok+1)); else echo "::warning::$ex failed, its previous snapshot stays"; fi
+          done
+          [ "$ok" -gt 0 ]
       - name: Publish to the data branch (single commit, history is not kept)
         run: |
           set -euo pipefail
@@ -30,11 +36,17 @@ jobs:
             git -C "$RUNNER_TEMP/data" rm -rfq . || true
           fi
           cd "$RUNNER_TEMP/data"
-          mkdir -p okx
-          cat "$RUNNER_TEMP/okx.json" >> "okx/$(date -u +%F).ndjson"
-          cp "$RUNNER_TEMP/okx.json" okx/latest.json
-          find okx -name '*.ndjson' -mtime +3 -delete
+          # у добовий архів — раз на 15 хв і лише топ-100 монет (інакше гілка роздувається); повний знімок — щоразу
+          archive=0; [ $(( 10#$(date -u +%M) / 5 % 3 )) -eq 0 ] && archive=1
+          for f in "$RUNNER_TEMP"/out/*.json; do
+            case "$f" in *.compact.json) continue;; esac
+            ex=$(basename "$f" .json)
+            mkdir -p "$ex"
+            cp "$f" "$ex/latest.json"
+            if [ "$archive" -eq 1 ]; then cat "$RUNNER_TEMP/out/$ex.compact.json" >> "$ex/$(date -u +%F).ndjson"; fi
+            find "$ex" -name '*.ndjson' -mtime +3 -delete
+          done
           git checkout -q --orphan snap
           git add -A
-          git -c user.name='collector' -c user.email='collector@users.noreply.github.com' commit -q -m "okx $(date -u +%FT%TZ)"
+          git -c user.name='collector' -c user.email='collector@users.noreply.github.com' commit -q -m "snapshots $(date -u +%FT%TZ)"
           git push -q --force origin snap:data

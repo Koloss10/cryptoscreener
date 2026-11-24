@@ -5,13 +5,10 @@
 export const OKX = 'https://www.okx.com';
 export const TOP_N = 30;                 // для скількох монет знімаємо стакан і фандинг
 export const BOOK_DEPTH = 400;           // рівнів стакана на сторону (максимум OKX)
-export const WALL_RANGE = 0.03;          // дивимось ±3% від ціни
-export const WALL_MIN_USD = 50_000;      // стіна не менша за це...
-export const WALL_REL = 8;               // ...і не менша за 8 медіан рівня в діапазоні
-export const WALLS_PER_SIDE = 5;
 const FETCH_TIMEOUT_MS = 10_000;
 
-const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+import { num, findWalls } from './common.mjs';
+export { findWalls };
 export const toSymbol = instId => String(instId).replace(/-USDT-SWAP$/, '') + 'USDT';
 const isUsdtSwap = instId => /^[A-Z0-9]+-USDT-SWAP$/.test(instId);
 
@@ -46,22 +43,6 @@ export function parseOpenInterest(data) {
     const out = {};
     for (const x of data) if (isUsdtSwap(x.instId) && num(x.oiUsd) !== null) out[x.instId] = Math.round(num(x.oiUsd));
     return out;
-}
-
-const median = a => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : 0; };
-
-// levels: [[price, contracts, ...], ...] від найближчого до ціни; повертає найбільші заявки в діапазоні ±WALL_RANGE
-export function findWalls(levels, mid, ctVal) {
-    const near = [];
-    for (const l of levels) {
-        const px = num(l[0]), sz = num(l[1]);
-        if (!(px > 0) || !(sz > 0) || Math.abs(px / mid - 1) > WALL_RANGE) continue;
-        near.push({ px, usd: px * sz * ctVal });
-    }
-    if (!near.length) return [];
-    const floor = Math.max(WALL_MIN_USD, WALL_REL * median(near.map(l => l.usd)));
-    return near.filter(l => l.usd >= floor).sort((a, b) => b.usd - a.usd).slice(0, WALLS_PER_SIDE)
-        .map(l => ({ px: l.px, usd: Math.round(l.usd), dist: Math.round((l.px / mid - 1) * 10000) / 100 }));
 }
 
 export function parseBook(data, ctVal) {

@@ -1,14 +1,15 @@
-// Джерело «OKX» для скринера: читає знімок, який раз на 5 хв кладе збирач (collector/okx.mjs) у гілку data.
+// Джерела-знімки (OKX, Bitget, Gate, MEXC) для скринера: читає файл, який раз на 5 хв кладе збирач (collector/*.mjs) у гілку data.
 // Без ключів і акаунта. Мережа підміняється параметрами (tests/okx-source.test.js).
 (function (root) {
     'use strict';
 
-    const URL_LATEST = 'https://raw.githubusercontent.com/Koloss10/cryptoscreener/data/okx/latest.json';
-    const DEFAULTS = { url: URL_LATEST, intervalMs: 60000, staleMs: 15 * 60000, fetchTimeoutMs: 10000 };
+    const EXCHANGES = ['okx', 'bitget', 'gate', 'mexc'];
+    const urlLatest = ex => `https://raw.githubusercontent.com/Koloss10/cryptoscreener/data/${ex}/latest.json`;
+    const DEFAULTS = { intervalMs: 60000, staleMs: 15 * 60000, fetchTimeoutMs: 10000 };
 
     // Знімок → рядки таблиці. Стіна — найбільша заявка стакана (обидва боки); для монет без знімка стакана — null.
-    function parseSnapshot(snap) {
-        if (!snap || snap.ex !== 'okx' || !Array.isArray(snap.coins) || !Number.isFinite(snap.ts)) throw new Error('невірний формат знімка');
+    function parseSnapshot(snap, ex) {
+        if (!snap || snap.ex !== ex || !Array.isArray(snap.coins) || !Number.isFinite(snap.ts)) throw new Error('невірний формат знімка');
         const walls = snap.walls || {};
         return snap.coins.map(c => {
             const w = walls[c.s];
@@ -21,8 +22,9 @@
         });
     }
 
-    function createOkxFeed(options) {
-        const o = { ...DEFAULTS, ...options };
+    function createExchangeFeed(options) {
+        if (!EXCHANGES.includes(options.ex)) throw new Error('невідома біржа: ' + options.ex);
+        const o = { ...DEFAULTS, url: urlLatest(options.ex), ...options };
         let timer = null, running = false, generation = 0;
 
         async function fetchSnapshot() {
@@ -40,14 +42,14 @@
             try {
                 const snap = await fetchSnapshot();
                 if (gen !== generation) return;
-                const rows = parseSnapshot(snap);
+                const rows = parseSnapshot(snap, o.ex);
                 const ageMs = o.now() - snap.ts;
                 o.onRows(rows, ageMs);
-                if (ageMs > o.staleMs) o.onStatus('reconnecting', `дані OKX застаріли на ${Math.round(ageMs / 60000)} хв: збирач на GitHub не оновлював їх (розклад Actions міг зупинитись)`);
+                if (ageMs > o.staleMs) o.onStatus('reconnecting', `дані ${o.ex.toUpperCase()} застаріли на ${Math.round(ageMs / 60000)} хв: збирач на GitHub не оновлював їх (розклад Actions міг зупинитись)`);
                 else o.onStatus('live', '');
             } catch (e) {
                 if (gen !== generation) return;
-                o.onStatus('error', `не вдалося отримати дані OKX (${e.message})`);
+                o.onStatus('error', `не вдалося отримати дані ${o.ex.toUpperCase()} (${e.message})`);
             }
         }
 
@@ -61,7 +63,7 @@
         return { start, stop, poll };
     }
 
-    const api = { URL_LATEST, parseSnapshot, createOkxFeed };
+    const api = { EXCHANGES, urlLatest, parseSnapshot, createExchangeFeed, createOkxFeed: opts => createExchangeFeed({ ex: 'okx', ...opts }) };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.OkxSource = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,4 +1,4 @@
-// Вкладка «Скринер»: таблиця метрик Binance Futures наживо (feed.js, metrics.js) або знімок OKX із збирача (okx-source.js).
+// Вкладка «Скринер»: таблиця метрик Binance Futures наживо (feed.js, metrics.js) або знімок OKX / Bitget / Gate / MEXC зі збирача (okx-source.js).
 (function () {
     'use strict';
 
@@ -30,19 +30,24 @@
     ];
     const SOURCES = {
         binance: { name: 'Binance Futures', columns: BINANCE_COLUMNS, defaultSort: 'vol1h' },
-        okx: { name: 'OKX (знімок раз на 5 хв)', columns: OKX_COLUMNS, defaultSort: 'vol24' }
+        okx: { name: 'OKX (знімок раз на 5 хв)', columns: OKX_COLUMNS, defaultSort: 'vol24', snap: true },
+        bitget: { name: 'Bitget (знімок раз на 5 хв)', columns: OKX_COLUMNS, defaultSort: 'vol24', snap: true },
+        gate: { name: 'Gate (знімок раз на 5 хв)', columns: OKX_COLUMNS, defaultSort: 'vol24', snap: true },
+        mexc: { name: 'MEXC (знімок раз на 5 хв)', columns: OKX_COLUMNS, defaultSort: 'vol24', snap: true }
     };
 
-    const state = { source: 'binance', okx: { rows: [], status: 'connecting', detail: '', ageMs: null }, rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, cryptoOnly: true, notice: '', status: 'connecting', detail: '' };
+    const freshSnap = () => ({ rows: [], status: 'connecting', detail: '', ageMs: null });
+    const state = { source: 'binance', snaps: { okx: freshSnap(), bitget: freshSnap(), gate: freshSnap(), mexc: freshSnap() }, rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, cryptoOnly: true, notice: '', status: 'connecting', detail: '' };
 
     function pct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
     function usd(v) { return '$' + window.fmtK(v); }
     const DETAIL_TEXT = { stale: 'немає даних понад 15 с', 'socket closed': "з'єднання закрито" };
     const columns = () => SOURCES[state.source].columns;
     // Стан активного джерела: рядки, статус і пояснення збою
-    const cur = () => (state.source === 'okx' ? state.okx : state);
-    const failureText = () => (state.source === 'okx'
-        ? `OKX: ${state.okx.detail}.`
+    const isSnap = () => !!SOURCES[state.source].snap;
+    const cur = () => (isSnap() ? state.snaps[state.source] : state);
+    const failureText = () => (isSnap()
+        ? `${state.source.toUpperCase()}: ${state.snaps[state.source].detail}.`
         : `Binance Futures: ${DETAIL_TEXT[state.detail] || state.detail}. Повторюємо автоматично. Якщо не з'єднується — перевірте VPN/регіон: Binance Futures недоступний у частині країн.`);
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -93,7 +98,7 @@
         chip.dataset.s = c.status;
         const detail = document.getElementById('lvDetail');
         const failing = c.detail && c.status !== 'live';
-        const notice = state.source === 'okx' ? '' : state.notice;
+        const notice = isSnap() ? '' : state.notice;
         detail.hidden = !(failing || notice);
         detail.textContent = failing ? failureText() : notice;
         document.getElementById('lvCount').textContent = `${rows.length} з ${c.rows.length} монет`;
@@ -102,39 +107,40 @@
 
     // OKX-таблиця не має хвилинних метрик: працюють лише пошук і мінімальний обсяг (за 24 год)
     function filterRows(rows) {
-        if (state.source !== 'okx') return window.Metrics.filterRows(rows, state.filters);
+        if (!isSnap()) return window.Metrics.filterRows(rows, state.filters);
         const f = state.filters, search = String(f.search || '').trim().toLowerCase();
         return rows.filter(r => (!search || r.symbol.toLowerCase().includes(search)) && (!f.minVol1h || r.vol24 >= f.minVol1h));
     }
 
     function renderSource() {
         document.querySelectorAll('#lvSource [data-src]').forEach(b => { b.classList.toggle('lv-on', b.dataset.src === state.source); b.setAttribute('aria-pressed', String(b.dataset.src === state.source)); });
-        const okx = state.source === 'okx';
+        const okx = isSnap();
         document.getElementById('lvTitle').textContent = '📡 Скринер: ' + SOURCES[state.source].name;
         document.getElementById('lvCryptoOnly').disabled = okx;
         for (const id of ['lvMinNatr', 'lvMinSpike']) document.getElementById(id).disabled = okx;
-        const age = state.okx.ageMs;
+        const age = isSnap() ? state.snaps[state.source].ageMs : null;
         document.getElementById('lvNote').textContent = okx
-            ? `Усі USDT-перпетуали OKX (разом із токенізованими акціями) зі знімка, який збирач на GitHub Actions оновлює раз на 5 хв${age === null ? '' : ` (зараз знімку ${Math.max(0, Math.round(age / 60000))} хв)`}. «Стіна» — найбільша заявка стакана в межах ±3% (лише для топ-30 за обсягом; глибина OKX — 400 рівнів, для BTC це лише біля ціни). Хвилинних метрик, NATR і сплеску тут немає: пошук і мінімальний обсяг працюють. Клік по рядку відкриває графік Binance Futures (якщо такої монети там немає, графік не завантажиться). Це аналітика, а не рекомендація.`
+            ? `Усі USDT-перпетуали ${state.source.toUpperCase()} (разом із токенізованими акціями, якщо вони є на біржі) зі знімка, який збирач на GitHub Actions оновлює раз на 5 хв${age === null ? '' : ` (зараз знімку ${Math.max(0, Math.round(age / 60000))} хв)`}. «Стіна» — найбільша заявка стакана в межах ±3% (лише для топ-30 за обсягом; глибина стакана обмежена біржею, для великих монет це лише біля ціни). Хвилинних метрик, NATR і сплеску тут немає: пошук і мінімальний обсяг працюють. Клік по рядку відкриває графік Binance Futures (якщо такої монети там немає, графік не завантажиться). Це аналітика, а не рекомендація.`
             : "Топ-40 USDT-ф'ючерсів за обсягом. Дані Binance Futures по WebSocket, метрики оновлюються раз на 2 с. Підсвітка: NATR ≥ 2% і сплеск обсягу ≥ ×3. Клік по рядку відкриває графік. Це аналітика, а не рекомендація.";
     }
 
-    let okxFeed = null;
-    function startOkx() {
-        if (okxFeed) return;
-        okxFeed = window.OkxSource.createOkxFeed({
-            fetchImpl: (u, o) => fetch(u, o), now: () => Date.now(),
-            onRows: (rows, ageMs) => { state.okx.rows = rows; state.okx.ageMs = ageMs; render(); },
-            onStatus: (s, detail) => { state.okx.status = s; state.okx.detail = s === 'live' ? '' : detail; render(); }
+    let snapFeed = null;                  // опитуємо знімок лише активної біржі
+    function stopSnap() { if (snapFeed) { snapFeed.stop(); snapFeed = null; } }
+    function startSnap(ex) {
+        stopSnap();
+        const slot = state.snaps[ex];
+        snapFeed = window.OkxSource.createExchangeFeed({
+            ex, fetchImpl: (u, o) => fetch(u, o), now: () => Date.now(),
+            onRows: (rows, ageMs) => { slot.rows = rows; slot.ageMs = ageMs; render(); },
+            onStatus: (s, detail) => { slot.status = s; slot.detail = s === 'live' ? '' : detail; render(); }
         });
-        okxFeed.start();
+        snapFeed.start();
     }
     function setSource(src) {
         if (!SOURCES[src] || src === state.source) return;
         state.source = src;
         if (!columns().some(c => c.key === state.sortKey)) { state.sortKey = SOURCES[src].defaultSort; state.sortDir = 'desc'; }
-        if (src === 'okx') startOkx();
-        else if (okxFeed) { okxFeed.stop(); okxFeed = null; }     // опитуємо знімок лише поки відкрито OKX
+        if (isSnap()) startSnap(src); else stopSnap();
         save(); render();
     }
 
@@ -198,7 +204,7 @@
         crypto.addEventListener('change', () => { state.cryptoOnly = crypto.checked; save(); startFeed(); });
         window.renderLive = render;      // викликається при відкритті вкладки
         startFeed();
-        if (state.source === 'okx') startOkx();
+        if (isSnap()) startSnap(state.source);
     }
 
     window.addEventListener('DOMContentLoaded', start);

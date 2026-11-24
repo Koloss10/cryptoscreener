@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseSnapshot, createOkxFeed } = require('../okx-source.js');
+const { parseSnapshot, createOkxFeed, createExchangeFeed, urlLatest } = require('../okx-source.js');
 
 const SNAP = {
     ts: 1_000_000, ex: 'okx',
@@ -12,16 +12,17 @@ const SNAP = {
 };
 
 test('parseSnapshot maps coins and picks the biggest wall of both sides', () => {
-    const rows = parseSnapshot(SNAP);
+    const rows = parseSnapshot(SNAP, 'okx');
     assert.deepEqual(rows[0], { symbol: 'BTCUSDT', price: 60000, chg24: -2.5, vol24: 8e9, oi: 1.8e9, funding: 0.0001, wallUsd: 900000, wallDist: 0.17 });
     assert.deepEqual(rows[1], { symbol: 'XYZUSDT', price: 1, chg24: 0, vol24: 1e6, oi: null, funding: null, wallUsd: null, wallDist: null });
 });
 
 test('parseSnapshot rejects foreign or broken data', () => {
-    assert.throws(() => parseSnapshot(null), /формат/);
-    assert.throws(() => parseSnapshot({ ex: 'bybit', coins: [], ts: 1 }), /формат/);
-    assert.throws(() => parseSnapshot({ ex: 'okx', coins: 'x', ts: 1 }), /формат/);
-    assert.throws(() => parseSnapshot({ ex: 'okx', coins: [] }), /формат/);
+    assert.throws(() => parseSnapshot(null, 'okx'), /формат/);
+    assert.throws(() => parseSnapshot({ ex: 'bybit', coins: [], ts: 1 }, 'okx'), /формат/);
+    assert.throws(() => parseSnapshot({ ex: 'okx', coins: 'x', ts: 1 }, 'okx'), /формат/);
+    assert.throws(() => parseSnapshot({ ex: 'okx', coins: [] }, 'okx'), /формат/);
+    assert.throws(() => parseSnapshot({ ex: 'gate', coins: [], ts: 1 }, 'mexc'), /формат/);        // знімок іншої біржі не приймаємо
 });
 
 const run = async (fetchImpl, now) => {
@@ -62,4 +63,14 @@ test('a result that arrives after stop() is ignored', async () => {
     await p;
     assert.equal(log.rows, null);
     assert.deepEqual(log.statuses, []);
+});
+
+test('each exchange reads its own file, labels errors with its name and rejects another exchange\'s snapshot', async () => {
+    assert.equal(urlLatest('gate'), 'https://raw.githubusercontent.com/Koloss10/cryptoscreener/data/gate/latest.json');
+    const urls = [], log = [];
+    const feed = createExchangeFeed({ ex: 'mexc', fetchImpl: async u => { urls.push(u); return { ok: true, json: async () => SNAP }; }, now: () => SNAP.ts, onRows: () => log.push('rows'), onStatus: (s, d) => log.push([s, d]) });
+    await feed.poll();
+    assert.deepEqual(urls, [urlLatest('mexc')]);
+    assert.match(log[0][1] || String(log[0]), /MEXC/);          // знімок okx у файлі mexc → помилка формату з назвою біржі
+    assert.throws(() => createExchangeFeed({ ex: 'binance' }), /невідома біржа/);
 });

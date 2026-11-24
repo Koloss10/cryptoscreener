@@ -215,11 +215,13 @@ async function run(name, fn, browser) {
         walls: { BTCUSDT: { mid: 60000, bids: [{ px: 59900, usd: 500000, dist: -0.17 }], asks: [{ px: 60100, usd: 900000, dist: 0.17 }] } }
     });
     async function okxSetup(page, { snap = okxSnap(), status = 200 } = {}) {
-        const hits = { n: 0 };
+        const hits = { n: 0, by: {} };
         await liveSetup(page);
         await page.route('**/raw.githubusercontent.com/**', route => {
             hits.n++;
-            return route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(snap) });
+            const ex = (new URL(route.request().url()).pathname.match(/\/data\/([a-z]+)\/latest\.json$/) || [])[1];
+            hits.by[ex] = (hits.by[ex] || 0) + 1;
+            return route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ ...snap, ex }) });   // знімок завжди «своєї» біржі
         });
         return hits;
     }
@@ -884,6 +886,30 @@ async function run(name, fn, browser) {
         assert.ok(calls.auth.some(c => c.path === '/auth/v1/logout'));
         assert.equal(await page.isVisible('#trLogin'), true);
         assert.equal(await page.locator('#trBuy').count(), 0);
+    }, browser);
+
+    await run('exchange sources: each button reads only its own file, and switching stops polling the previous one', async page => {
+        const hits = await okxSetup(page);
+        for (const ex of ['bitget', 'gate', 'mexc']) {
+            await page.click(`#lvSource [data-src="${ex}"]`); await page.waitForTimeout(350);
+            assert.equal(hits.by[ex], 1, ex);
+            assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 3, ex);
+            assert.match(await page.textContent('#lvTitle'), new RegExp(ex, 'i'));
+            assert.equal(await page.textContent('#lvStatus'), 'Наживо');
+        }
+        assert.equal(hits.by.okx, undefined);                                   // OKX не чіпали
+        await page.waitForTimeout(200);
+        assert.deepEqual(Object.keys(hits.by).sort(), ['bitget', 'gate', 'mexc']);
+        assert.equal(await page.getAttribute('#lvSource [data-src="mexc"]', 'aria-pressed'), 'true');
+        assert.equal(await page.getAttribute('#lvSource [data-src="gate"]', 'aria-pressed'), 'false');
+    }, browser);
+
+    await run('exchange sources: the chosen source is remembered after reload', async page => {
+        await okxSetup(page);
+        await page.click('#lvSource [data-src="gate"]'); await page.waitForTimeout(300);
+        await page.reload(); await page.waitForTimeout(600);
+        assert.match(await page.textContent('#lvTitle'), /Gate/);
+        assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 3);
     }, browser);
 
     await run('TradingView script is not loaded with the page, only on demand', async page => {
