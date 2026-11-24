@@ -41,7 +41,8 @@ python3 -m http.server 8080   # потім відкрити http://localhost:808
 | `collector/*.mjs` | збирачі публічних даних OKX, Bitget, Gate, MEXC для GitHub Actions (`run.mjs` — запуск, `common.mjs` — спільне) |
 | `theme.css` | тема Orbix (токени з Koloss10/Orbix) + приведення старих вкладок до неї |
 | `analysis.js` | чисті функції аналізу свічок (RSI, EMA, пробій, патерни, FVG) |
-| `app.js` | уся логіка: дані, графік, бот, бектест, скрінер |
+| `app.js` | ядро: дані Binance, генератор свічок, спільний стан `app` |
+| `veles-bot.js`, `backtest.js`, `chart.js`, `nav.js` | Veles-бот і біржі; бектестер; головний графік; навігація, TradingView на вимогу, скрінер Топ-20 (колишній `app.js`, розбито без змін логіки; скрипти класичні, їхні `const`/`let` спільні й завантажуються по черзі) |
 | `tests/analysis.test.js` | юніт-тести `analysis.js` (`node --test tests/`) |
 | `tests/smoke.js` | Playwright-тест із підміною мережі (`npm i && npx playwright install chromium && npm test`) |
 
