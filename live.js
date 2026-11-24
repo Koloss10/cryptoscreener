@@ -1,11 +1,11 @@
-// Вкладка «Скринер»: таблиця метрик Binance Futures наживо. Дані — feed.js, розрахунки — metrics.js.
+// Вкладка «Скринер»: таблиця метрик Binance Futures наживо (feed.js, metrics.js) або знімок OKX із збирача (okx-source.js).
 (function () {
     'use strict';
 
     const STORE_KEY = 'cs_live_v1';
     const HOT = { natr5: 2, spike: 3 };            // підсвітка за замовчуванням: NATR ≥ 2%, сплеск обсягу ≥ ×3
     const STATUS_TEXT = { connecting: 'Підключення…', live: 'Наживо', reconnecting: 'Перепідключення…', error: 'Помилка' };
-    const COLUMNS = [
+    const BINANCE_COLUMNS = [
         { key: 'symbol', label: 'Монета' },
         { key: 'price', label: 'Ціна', fmt: v => '$' + window.fmt(v) },
         { key: 'chg24', label: '24г', fmt: pct, tone: true },
@@ -18,13 +18,32 @@
         { key: 'funding', label: 'Фандинг', fmt: v => (v * 100).toFixed(4) + '%', tone: true },
         { key: 'vol24', label: 'Обсяг 24г', fmt: usd }
     ];
+    const OKX_COLUMNS = [
+        { key: 'symbol', label: 'Монета' },
+        { key: 'price', label: 'Ціна', fmt: v => '$' + window.fmt(v) },
+        { key: 'chg24', label: '24г', fmt: pct, tone: true },
+        { key: 'vol24', label: 'Обсяг 24г', fmt: usd },
+        { key: 'oi', label: 'Відкр. інтерес', fmt: usd },
+        { key: 'funding', label: 'Фандинг', fmt: v => (v * 100).toFixed(4) + '%', tone: true },
+        { key: 'wallUsd', label: 'Стіна, $', fmt: usd },
+        { key: 'wallDist', label: 'Стіна, %', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%' }
+    ];
+    const SOURCES = {
+        binance: { name: 'Binance Futures', columns: BINANCE_COLUMNS, defaultSort: 'vol1h' },
+        okx: { name: 'OKX (знімок раз на 5 хв)', columns: OKX_COLUMNS, defaultSort: 'vol24' }
+    };
 
-    const state = { rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, cryptoOnly: true, notice: '', status: 'connecting', detail: '' };
+    const state = { source: 'binance', okx: { rows: [], status: 'connecting', detail: '', ageMs: null }, rows: [], sortKey: 'vol1h', sortDir: 'desc', filters: { minVol1h: 0, minNatr: 0, minSpike: 0, search: '' }, cryptoOnly: true, notice: '', status: 'connecting', detail: '' };
 
     function pct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
     function usd(v) { return '$' + window.fmtK(v); }
     const DETAIL_TEXT = { stale: 'немає даних понад 15 с', 'socket closed': "з'єднання закрито" };
-    const failureText = () => `Binance Futures: ${DETAIL_TEXT[state.detail] || state.detail}. Повторюємо автоматично. Якщо не з'єднується — перевірте VPN/регіон: Binance Futures недоступний у частині країн.`;
+    const columns = () => SOURCES[state.source].columns;
+    // Стан активного джерела: рядки, статус і пояснення збою
+    const cur = () => (state.source === 'okx' ? state.okx : state);
+    const failureText = () => (state.source === 'okx'
+        ? `OKX: ${state.okx.detail}.`
+        : `Binance Futures: ${DETAIL_TEXT[state.detail] || state.detail}. Повторюємо автоматично. Якщо не з'єднується — перевірте VPN/регіон: Binance Futures недоступний у частині країн.`);
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     function load() {
@@ -33,13 +52,14 @@
             if (saved && typeof saved === 'object') {
                 Object.assign(state.filters, saved.filters || {});
                 if (typeof saved.cryptoOnly === 'boolean') state.cryptoOnly = saved.cryptoOnly;
-                if (COLUMNS.some(c => c.key === saved.sortKey)) state.sortKey = saved.sortKey;
+                if (SOURCES[saved.source]) state.source = saved.source;
+                if (columns().some(c => c.key === saved.sortKey)) state.sortKey = saved.sortKey;
                 if (saved.sortDir === 'asc' || saved.sortDir === 'desc') state.sortDir = saved.sortDir;
             }
         } catch (e) { /* сховище недоступне або пошкоджене — працюємо зі значеннями за замовчуванням */ }
     }
     function save() {
-        try { localStorage.setItem(STORE_KEY, JSON.stringify({ filters: state.filters, cryptoOnly: state.cryptoOnly, sortKey: state.sortKey, sortDir: state.sortDir })); }
+        try { localStorage.setItem(STORE_KEY, JSON.stringify({ source: state.source, filters: state.filters, cryptoOnly: state.cryptoOnly, sortKey: state.sortKey, sortDir: state.sortDir })); }
         catch (e) { /* приватний режим: налаштування не збережуться, це не критично */ }
     }
 
@@ -55,26 +75,67 @@
     function render() {
         const view = document.getElementById('view-live');
         if (!view || view.classList.contains('hidden')) return;     // у фоні не перемальовуємо
-        const rows = window.Metrics.sortRows(window.Metrics.filterRows(state.rows, state.filters), state.sortKey, state.sortDir);
+        const c = cur(), cols = columns();
+        const rows = window.Metrics.sortRows(filterRows(c.rows), state.sortKey, state.sortDir);
 
-        document.getElementById('lvHead').innerHTML = '<tr>' + COLUMNS.map(c =>
+        document.getElementById('lvHead').innerHTML = '<tr>' + cols.map(c =>
             `<th data-k="${c.key}" ${c.key === state.sortKey ? `aria-sort="${state.sortDir === 'asc' ? 'ascending' : 'descending'}"` : ''}>${c.label}${c.key === state.sortKey ? (state.sortDir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr>';
 
         const body = document.getElementById('lvBody');
         if (!rows.length) {
-            const msg = state.rows.length ? 'Жодна монета не пройшла фільтри.' : (state.detail ? esc(failureText()) : 'Очікуємо дані…');
-            body.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="lv-empty">${msg}</td></tr>`;
+            const msg = c.rows.length ? 'Жодна монета не пройшла фільтри.' : (c.detail ? esc(failureText()) : 'Очікуємо дані…');
+            body.innerHTML = `<tr><td colspan="${cols.length}" class="lv-empty">${msg}</td></tr>`;
         } else {
-            body.innerHTML = rows.map(r => `<tr data-sym="${esc(r.symbol)}" tabindex="0">${COLUMNS.map(c => cell(c, r)).join('')}</tr>`).join('');
+            body.innerHTML = rows.map(r => `<tr data-sym="${esc(r.symbol)}" tabindex="0">${cols.map(col => cell(col, r)).join('')}</tr>`).join('');
         }
         const chip = document.getElementById('lvStatus');
-        chip.textContent = STATUS_TEXT[state.status] || state.status;
-        chip.dataset.s = state.status;
+        chip.textContent = STATUS_TEXT[c.status] || c.status;
+        chip.dataset.s = c.status;
         const detail = document.getElementById('lvDetail');
-        const failing = state.detail && state.status !== 'live';
-        detail.hidden = !(failing || state.notice);
-        detail.textContent = failing ? failureText() : state.notice;
-        document.getElementById('lvCount').textContent = `${rows.length} з ${state.rows.length} монет`;
+        const failing = c.detail && c.status !== 'live';
+        const notice = state.source === 'okx' ? '' : state.notice;
+        detail.hidden = !(failing || notice);
+        detail.textContent = failing ? failureText() : notice;
+        document.getElementById('lvCount').textContent = `${rows.length} з ${c.rows.length} монет`;
+        renderSource();
+    }
+
+    // OKX-таблиця не має хвилинних метрик: працюють лише пошук і мінімальний обсяг (за 24 год)
+    function filterRows(rows) {
+        if (state.source !== 'okx') return window.Metrics.filterRows(rows, state.filters);
+        const f = state.filters, search = String(f.search || '').trim().toLowerCase();
+        return rows.filter(r => (!search || r.symbol.toLowerCase().includes(search)) && (!f.minVol1h || r.vol24 >= f.minVol1h));
+    }
+
+    function renderSource() {
+        document.querySelectorAll('#lvSource [data-src]').forEach(b => { b.classList.toggle('lv-on', b.dataset.src === state.source); b.setAttribute('aria-pressed', String(b.dataset.src === state.source)); });
+        const okx = state.source === 'okx';
+        document.getElementById('lvTitle').textContent = '📡 Скринер: ' + SOURCES[state.source].name;
+        document.getElementById('lvCryptoOnly').disabled = okx;
+        for (const id of ['lvMinNatr', 'lvMinSpike']) document.getElementById(id).disabled = okx;
+        const age = state.okx.ageMs;
+        document.getElementById('lvNote').textContent = okx
+            ? `Усі USDT-перпетуали OKX (разом із токенізованими акціями) зі знімка, який збирач на GitHub Actions оновлює раз на 5 хв${age === null ? '' : ` (зараз знімку ${Math.max(0, Math.round(age / 60000))} хв)`}. «Стіна» — найбільша заявка стакана в межах ±3% (лише для топ-30 за обсягом; глибина OKX — 400 рівнів, для BTC це лише біля ціни). Хвилинних метрик, NATR і сплеску тут немає: пошук і мінімальний обсяг працюють. Клік по рядку відкриває графік Binance Futures (якщо такої монети там немає, графік не завантажиться). Це аналітика, а не рекомендація.`
+            : "Топ-40 USDT-ф'ючерсів за обсягом. Дані Binance Futures по WebSocket, метрики оновлюються раз на 2 с. Підсвітка: NATR ≥ 2% і сплеск обсягу ≥ ×3. Клік по рядку відкриває графік. Це аналітика, а не рекомендація.";
+    }
+
+    let okxFeed = null;
+    function startOkx() {
+        if (okxFeed) return;
+        okxFeed = window.OkxSource.createOkxFeed({
+            fetchImpl: (u, o) => fetch(u, o), now: () => Date.now(),
+            onRows: (rows, ageMs) => { state.okx.rows = rows; state.okx.ageMs = ageMs; render(); },
+            onStatus: (s, detail) => { state.okx.status = s; state.okx.detail = s === 'live' ? '' : detail; render(); }
+        });
+        okxFeed.start();
+    }
+    function setSource(src) {
+        if (!SOURCES[src] || src === state.source) return;
+        state.source = src;
+        if (!columns().some(c => c.key === state.sortKey)) { state.sortKey = SOURCES[src].defaultSort; state.sortDir = 'desc'; }
+        if (src === 'okx') startOkx();
+        else if (okxFeed) { okxFeed.stop(); okxFeed = null; }     // опитуємо знімок лише поки відкрито OKX
+        save(); render();
     }
 
     function openSymbol(sym) {
@@ -95,6 +156,7 @@
             state.sortKey = key;
             save(); render();
         });
+        document.getElementById('lvSource').addEventListener('click', e => { const b = e.target.closest('[data-src]'); if (b) setSource(b.dataset.src); });
         const body = document.getElementById('lvBody');
         body.addEventListener('click', e => { const tr = e.target.closest('tr[data-sym]'); if (tr) openSymbol(tr.dataset.sym); });
         body.addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-sym]'); if (tr) openSymbol(tr.dataset.sym); } });
@@ -136,6 +198,7 @@
         crypto.addEventListener('change', () => { state.cryptoOnly = crypto.checked; save(); startFeed(); });
         window.renderLive = render;      // викликається при відкритті вкладки
         startFeed();
+        if (state.source === 'okx') startOkx();
     }
 
     window.addEventListener('DOMContentLoaded', start);

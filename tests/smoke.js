@@ -204,6 +204,77 @@ async function run(name, fn, browser) {
         });
     }
 
+    // --- джерело OKX у скринері: знімок із гілки data (підроблений) ---
+    const okxSnap = (ageMs = 60000) => ({
+        ts: Date.now() - ageMs, ex: 'okx',
+        coins: [
+            { s: 'BTCUSDT', last: 60000, chg24h: -2.5, volUsd: 8e9, oiUsd: 1.8e9, fund: 0.0001 },
+            { s: 'SOLUSDT', last: 150, chg24h: 4.2, volUsd: 2e9, oiUsd: 5e8, fund: -0.0002 },
+            { s: 'XYZUSDT', last: 1, chg24h: 0.1, volUsd: 1e6, oiUsd: null, fund: null }
+        ],
+        walls: { BTCUSDT: { mid: 60000, bids: [{ px: 59900, usd: 500000, dist: -0.17 }], asks: [{ px: 60100, usd: 900000, dist: 0.17 }] } }
+    });
+    async function okxSetup(page, { snap = okxSnap(), status = 200 } = {}) {
+        const hits = { n: 0 };
+        await liveSetup(page);
+        await page.route('**/raw.githubusercontent.com/**', route => {
+            hits.n++;
+            return route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(snap) });
+        });
+        return hits;
+    }
+
+    await run('okx source: switching shows the OKX table with its own columns, filters and a note', async page => {
+        await okxSetup(page);
+        await page.click('#lvSource [data-src="okx"]'); await page.waitForTimeout(500);
+        assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 3);
+        assert.match(await page.textContent('#lvHead'), /Відкр\. інтерес/);
+        assert.match(await page.textContent('#lvHead'), /Стіна/);
+        assert.doesNotMatch(await page.textContent('#lvHead'), /NATR/);
+        const btc = await page.$eval('#lvBody tr[data-sym="BTCUSDT"]', tr => tr.textContent.replace(/\s+/g, ' '));
+        assert.match(btc, /60,?000/); assert.match(btc, /-2\.50%/); assert.match(btc, /\$900/);       // найбільша стіна 900K
+        assert.equal(await page.textContent('#lvStatus'), 'Наживо');
+        assert.equal(await page.isDisabled('#lvMinNatr'), true);
+        assert.match(await page.textContent('#lvNote'), /збирач на GitHub Actions/);
+        await page.fill('#lvSearch', 'sol');
+        assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 1);
+    }, browser);
+
+    await run('okx source: min volume filter uses the 24h volume; Binance feed keeps running in the background', async page => {
+        await okxSetup(page);
+        await page.click('#lvSource [data-src="okx"]'); await page.waitForTimeout(400);
+        await page.fill('#lvMinVol', '1500');                                   // 1500 млн $ → лишаються BTC і SOL
+        assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 2);
+        assert.equal(await page.evaluate(() => typeof window.liveFeed.getRows), 'function');
+        assert.ok((await page.evaluate(() => window.liveFeed.getRows().length)) > 0);
+    }, browser);
+
+    await run('okx source: an old snapshot is flagged as stale, a missing one shows the error, neither is shown as live', async page => {
+        await okxSetup(page, { snap: okxSnap(40 * 60000) });
+        await page.click('#lvSource [data-src="okx"]'); await page.waitForTimeout(500);
+        assert.notEqual(await page.textContent('#lvStatus'), 'Наживо');
+        assert.match(await page.textContent('#lvDetail'), /застаріли на 40 хв/);
+    }, browser);
+
+    await run('okx source: HTTP error from the data branch is reported', async page => {
+        await okxSetup(page, { status: 404 });
+        await page.click('#lvSource [data-src="okx"]'); await page.waitForTimeout(500);
+        assert.match(await page.textContent('#lvDetail'), /HTTP 404/);
+        assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 0);
+    }, browser);
+
+    await run('okx source: nothing is requested from GitHub until OKX is selected, and switching back restores the Binance table', async page => {
+        const hits = await okxSetup(page);
+        await page.waitForTimeout(400);
+        assert.equal(hits.n, 0);
+        await page.click('#lvSource [data-src="okx"]'); await page.waitForTimeout(400);
+        assert.equal(hits.n, 1);
+        await page.click('#lvSource [data-src="binance"]'); await page.waitForTimeout(300);
+        assert.match(await page.textContent('#lvHead'), /NATR/);
+        assert.equal(await page.isDisabled('#lvMinNatr'), false);
+        assert.equal(await page.locator('#lvBody tr[data-sym="ETHUSDT"]').count(), 1);
+    }, browser);
+
     await run('live tab is the default and renders metrics from feed data', async page => {
         await liveSetup(page);
         assert.equal(await page.$eval('#view-live', e => e.classList.contains('hidden')), false);

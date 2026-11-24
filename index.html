@@ -75,10 +75,11 @@
     ========================================================================== -->
     <section id="view-live" class="tab-view panel p-3.5">
         <div class="lv-top">
-            <h2>📡 Скринер Binance Futures</h2>
+            <h2 id="lvTitle">📡 Скринер Binance Futures</h2>
             <span id="lvCount" class="lv-mu" style="font-size:12px"></span>
             <span id="lvStatus" class="lv-chip" data-s="connecting">Підключення…</span>
         </div>
+        <div class="lv-row" id="lvSource" role="group" aria-label="Джерело даних"><button type="button" class="lv-btn lv-on" data-src="binance" aria-pressed="true">Binance Futures</button><button type="button" class="lv-btn" data-src="okx" aria-pressed="false">OKX</button></div>
         <div class="lv-filters">
             <label class="lv-check"><input id="lvCryptoOnly" type="checkbox"> Лише крипто (без акцій і сировини)</label>
             <label>Пошук<input id="lvSearch" type="search" placeholder="BTC, SOL…" autocomplete="off"></label>
@@ -90,7 +91,7 @@
         <div class="lv-wrap">
             <table class="lv-table"><thead id="lvHead"></thead><tbody id="lvBody"></tbody></table>
         </div>
-        <p class="lv-note">Топ-40 USDT-ф'ючерсів за обсягом. Дані Binance Futures по WebSocket, метрики оновлюються раз на 2 с. Підсвітка: NATR ≥ 2% і сплеск обсягу ≥ ×3. Клік по рядку відкриває графік. Це аналітика, а не рекомендація.</p>
+        <p class="lv-note" id="lvNote">Топ-40 USDT-ф'ючерсів за обсягом. Дані Binance Futures по WebSocket, метрики оновлюються раз на 2 с. Підсвітка: NATR ≥ 2% і сплеск обсягу ≥ ×3. Клік по рядку відкриває графік. Це аналітика, а не рекомендація.</p>
     </section>
 
     <section id="view-dens" class="tab-view hidden panel p-3.5">
@@ -721,6 +722,7 @@
     <script src="analysis.js" defer></script>
     <script src="metrics.js" defer></script>
     <script src="feed.js" defer></script>
+    <script src="okx-source.js" defer></script>
     <script src="density.js" defer></script>
     <script src="density-feed.js" defer></script>
     <script src="formations.js" defer></script>
