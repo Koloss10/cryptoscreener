@@ -138,7 +138,46 @@
     </section>
 
     <section id="view-trade" class="tab-view hidden panel p-3.5">
-        <div class="lv-top"><h2>💼 Торгівля: Demo / Testnet</h2></div>
+        <div class="lv-top"><h2>💼 Торгівля: Demo / Testnet</h2><span id="trAcct" class="lv-chip" data-s="connecting">не ввійшли</span><button type="button" id="trSignOut" class="lv-btn" hidden>Вийти</button></div>
+        <p id="trAuthMsg" class="lv-note" role="status"></p>
+
+        <form id="trLogin" class="tr-form" autocomplete="on">
+            <h3>Вхід у власний акаунт CryptoScreener</h3>
+            <div class="lv-filters">
+                <label>Пошта<input id="trEmail" type="email" autocomplete="username" required></label>
+                <label>Пароль<input id="trPass" type="password" autocomplete="current-password" minlength="8" required></label>
+            </div>
+            <div class="lv-row"><button type="submit" class="lv-btn lv-on">Увійти</button><button type="button" id="trSignUp" class="lv-btn">Зареєструватися</button></div>
+            <p class="lv-note">Це окремий акаунт цього скрінера (не Orbix). Ключі біржі зберігаються на сервері в Supabase Vault і не потрапляють у браузер.</p>
+        </form>
+
+        <div id="trMfa" class="tr-form" hidden>
+            <h3>Двофакторний вхід (обовʼязковий)</h3>
+            <div class="lv-row"><button type="button" id="trMfaStart" class="lv-btn lv-on">Увімкнути 2FA (Google Authenticator)</button></div>
+            <div id="trMfaEnroll" hidden>
+                <p class="lv-note">Скануйте QR-код застосунком-автентифікатором (або введіть секрет вручну), потім введіть 6-значний код.</p>
+                <img id="trQr" alt="QR-код для 2FA" width="160" height="160">
+                <p class="lv-note">Секрет: <code id="trSecretTxt"></code></p>
+            </div>
+            <form id="trMfaForm" hidden>
+                <div class="lv-filters"><label>Код із застосунку<input id="trTotp" inputmode="numeric" autocomplete="one-time-code" maxlength="7"></label></div>
+                <div class="lv-row"><button type="submit" class="lv-btn lv-on">Підтвердити</button></div>
+            </form>
+        </div>
+
+        <div id="trKeys" class="tr-form" hidden>
+            <h3>Ключі <span id="trKeysTitle"></span></h3>
+            <form id="trKeyForm" autocomplete="off">
+                <div class="lv-filters">
+                    <label>API Key<input id="trKey" type="password" autocomplete="off" spellcheck="false"></label>
+                    <label>API Secret<input id="trSecret" type="password" autocomplete="off" spellcheck="false"></label>
+                </div>
+                <div class="lv-row"><button type="submit" class="lv-btn lv-on">Зберегти й перевірити</button><button type="button" id="trKeyDel" class="lv-btn">Видалити ключі</button></div>
+                <p class="lv-note">Лише Bybit Demo і Binance Futures Testnet; ключ має мати право торгівлі й не мати права виведення. Вводьте ключі лише тут, ніколи в чаті.</p>
+            </form>
+        </div>
+
+        <div class="lv-filters"><label>Не чіпати пари (через кому; напр. ті, де працюють боти Orbix)<input id="trBlock" placeholder="BTCUSDT, ETHUSDT" autocomplete="off" spellcheck="false"></label></div>
         <div id="trBody"></div>
     </section>
 
