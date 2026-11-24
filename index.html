@@ -56,10 +56,11 @@
         </div>
     </header>
 
-    <!-- НАВІГАЦІЯ ВКЛАДОК (9 РОЗДІЛІВ) -->
+    <!-- НАВІГАЦІЯ ВКЛАДОК (10 РОЗДІЛІВ) -->
     <nav class="grid grid-cols-3 gap-1.5 mb-2.5 bg-[#131722] p-1.5 rounded-xl border border-[#1e2433]">
         <button id="nav-live" onclick="window.openTab('live',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📡 Скринер</button>
         <button id="nav-dens" onclick="window.openTab('dens',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🧱 Плотності</button>
+        <button id="nav-form" onclick="window.openTab('form',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🎯 Формації</button>
         <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📈 Термінал</button>
         <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот (симуляція)</button>
         <button id="nav-backtest" onclick="window.openTab('backtest',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-amber-300">🧪 Veles Бектест</button>
@@ -107,6 +108,33 @@
             <table class="lv-table"><thead id="dsHead"></thead><tbody id="dsBody"></tbody></table>
         </div>
         <p class="lv-note">Крупні лімітні заявки в книзі: рівень, що в ≥ 8 разів більший за медіанний рівень свого боку. Книга береться по 1000 рівнів, тому видно лише в межах колонки «Глибина книги» (для BTC це лише десяті частки відсотка, для дрібних монет — кілька %). Монети опитуються по черзі, тож кожна оновлюється раз на ≈ 75 с; монета з відкритого графіка — частіше. «Розїдання» — за скільки хвилин плотність зʼїсть поточний обсяг торгів. Заявки можуть зникнути до того, як ціна їх торкнеться. Це аналітика, а не рекомендація.</p>
+    </section>
+
+    <section id="view-form" class="tab-view hidden panel p-3.5">
+        <div class="lv-top">
+            <h2>🎯 Формації (1m, Binance Futures)</h2>
+            <span id="fmCount" class="lv-mu" style="font-size:12px"></span>
+        </div>
+        <div class="lv-wrap" style="margin-bottom:12px">
+            <table class="lv-table">
+                <thead><tr><th>Формація</th><th>24 год</th><th>7 днів</th><th>Весь час</th></tr></thead>
+                <tbody id="fmStats"></tbody>
+            </table>
+        </div>
+        <p class="lv-note" style="margin:-4px 2px 12px">У клітинці: кількість сигналів · відсоток перемог (тейк до стопу) · середній результат в R. Стоп = −1R, тейк = +2R.</p>
+        <div class="lv-filters">
+            <label>Формація<select id="fmType"><option value="all">Усі</option><option value="breakout">Пробій рівня</option><option value="retest">Ретест рівня</option><option value="surge">Сплеск обсягу</option><option value="bounce">Відскок від плотності</option></select></label>
+            <label class="lv-check"><input id="fmOpen" type="checkbox"> Лише відкриті</label>
+            <label class="lv-check"><input id="fmSound" type="checkbox"> 🔔 Звук при новій формації</label>
+            <label><span>&nbsp;</span><button id="fmClear" type="button" class="lv-btn">Очистити історію</button></label>
+        </div>
+        <div class="lv-wrap">
+            <table class="lv-table">
+                <thead><tr><th>Час</th><th>Монета</th><th>Формація</th><th>Бік</th><th>Вхід</th><th>Стоп</th><th>Тейк</th><th>Результат</th></tr></thead>
+                <tbody id="fmBody"></tbody>
+            </table>
+        </div>
+        <p class="lv-note">Детектор шукає сигнали на закритих 1-хвилинних свічках 40 монет зі «Скринера», поки ця сторінка відкрита; історія й статистика зберігаються лише в цьому браузері (до 500 сигналів). Результат — за наступними свічками, до 60 хв: якщо стоп і тейк у межах однієї свічки, рахується стоп; комісії й проковзування не враховані; «невідомо» — коли свічок для перевірки вже немає. Це аналітика й навчальна статистика, а не рекомендація.</p>
     </section>
 
     <main id="view-terminal" class="tab-view hidden space-y-2.5">
@@ -651,8 +679,10 @@
     <script src="feed.js" defer></script>
     <script src="density.js" defer></script>
     <script src="density-feed.js" defer></script>
+    <script src="formations.js" defer></script>
     <script src="app.js" defer></script>
     <script src="live.js" defer></script>
     <script src="dens.js" defer></script>
+    <script src="form.js" defer></script>
 </body>
 </html>

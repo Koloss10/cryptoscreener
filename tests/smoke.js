@@ -168,7 +168,7 @@ async function run(name, fn, browser) {
 
 
     // --- вкладка «Скринер» (live): підроблені WebSocket і fapi REST ---
-    async function liveSetup(page) {
+    async function liveSetup(page, { kl } = {}) {
         await page.addInitScript(() => {
             window.__sockets = [];
             window.WebSocket = class {
@@ -189,7 +189,7 @@ async function run(name, fn, browser) {
                 ? { symbols: [info('BTCUSDT', 'COIN'), info('ETHUSDT', 'COIN'), info('1000PEPEUSDT', 'COIN'), info('NVDAUSDT', 'EQUITY')] }
                 : u.pathname.endsWith('/ticker/24hr')
                 ? [tk('BTCUSDT', 9e9), tk('ETHUSDT', 5e9), tk('NVDAUSDT', 4e9), tk('1000PEPEUSDT', 1e9), tk('SOLUSDT_250101', 9e10)]
-                : fk(u.searchParams.get('symbol') === 'ETHUSDT' ? 9000 : 1000);
+                : ((kl && kl(u.searchParams.get('symbol'))) || fk(u.searchParams.get('symbol') === 'ETHUSDT' ? 9000 : 1000));
             return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
         });
         await page.route('**/api/v3/**', r => r.abort());
@@ -376,6 +376,75 @@ async function run(name, fn, browser) {
         assert.equal(await page.$eval('#view-live', e => e.classList.contains('hidden')), true);
         await page.click('#nav-terminal');
         assert.match(await page.evaluate(() => location.hash), /#terminal/);
+    }, browser);
+
+
+    // --- вкладка «Формації»: пробій на останній закритій свічці BTC ---
+    const nowMin = () => Math.floor(Date.now() / 60000) * 60000;
+    const breakoutKlines = (now) => (symbol) => {
+        if (symbol !== 'BTCUSDT') return null;
+        return Array.from({ length: 130 }, (_, i) => {
+            const t = now - (129 - i) * 60000;
+            if (i === 128) return [t, 100, 101.1, 100, 101, 10, t + 59999, 5000];     // закрита свічка пробою рівня 100.2
+            if (i === 129) return [t, 101, 101.2, 100.9, 101.1, 10, t + 59999, 500];  // поточна, ще формується
+            return [t, 100, 100.2, 99.8, 100, 10, t + 59999, 1000];
+        });
+    };
+    const klineMsg = (t, o, h, l, c, q) => JSON.stringify({ stream: 'btcusdt@kline_1m', data: { s: 'BTCUSDT', k: { t, o: String(o), h: String(h), l: String(l), c: String(c), v: '1', q: String(q) } } });
+
+    await run('formations tab shows a breakout found on the last closed candle and counts it in stats', async page => {
+        const now = nowMin();
+        await liveSetup(page, { kl: breakoutKlines(now) });
+        await page.evaluate(() => window.formationsScan());
+        await page.click('#nav-form');
+        const row = await page.$eval('#fmBody tr[data-sym="BTCUSDT"]', tr => tr.textContent.replace(/\s+/g, ' '));
+        assert.match(row, /Пробій рівня/);
+        assert.match(row, /LONG/);
+        assert.match(row, /відкрита/);
+        assert.match(await page.textContent('#fmStats'), /Пробій рівня\s*1/);
+        assert.equal((await page.$$('#fmBody tr[data-sym]')).length, 1);                // інші монети — без сигналів
+    }, browser);
+
+    await run('formations: take hit on later candles is recorded as a win and the history survives a reload', async page => {
+        const now = nowMin();
+        await liveSetup(page, { kl: breakoutKlines(now) });
+        await page.evaluate(() => window.formationsScan());
+        await page.evaluate(([a, b]) => {
+            const ws = window.__sockets[0];
+            ws.onmessage({ data: a });                                                    // поточна свічка сягнула тейку (≈103)
+            ws.onmessage({ data: b });                                                    // нова хвилина → попередня стала закритою
+            window.formationsScan();
+        }, [klineMsg(now, 101, 103.6, 100.9, 103.4, 900), klineMsg(now + 60000, 103.4, 103.5, 103.2, 103.3, 400)]);
+        await page.click('#nav-form');
+        assert.match(await page.$eval('#fmBody tr[data-sym="BTCUSDT"]', tr => tr.textContent), /✅ \+2\.0R/);
+        assert.match(await page.textContent('#fmStats'), /Пробій рівня\s*1\s*·\s*100%\s*·\s*\+2\.0R/);
+        await page.reload(); await page.waitForTimeout(400);
+        assert.equal(await page.$eval('#view-form', e => e.classList.contains('hidden')), false);   // вкладка з URL-хешу
+        assert.match(await page.$eval('#fmBody tr[data-sym="BTCUSDT"]', tr => tr.textContent), /✅/);
+    }, browser);
+
+    await run('formations: corrupted saved history is discarded without breaking the page', async page => {
+        await page.addInitScript(() => localStorage.setItem('cs_form_v1', JSON.stringify({ signals: [{ id: 5 }, null, 'x', { id: 'ok', type: 'nope' }], type: 'weird' })));
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.route('**/fapi/v1/**', r => r.abort());
+        await page.goto(PAGE + '#form'); await page.waitForTimeout(500);
+        assert.match(await page.textContent('#fmBody'), /Поки що формацій не знайдено/);
+        assert.equal(await page.inputValue('#fmType'), 'all');
+    }, browser);
+
+    await run('formations: filters (open only, type) work and the history can be cleared', async page => {
+        const now = nowMin();
+        await liveSetup(page, { kl: breakoutKlines(now) });
+        await page.evaluate(() => window.formationsScan());
+        await page.click('#nav-form');
+        await page.selectOption('#fmType', 'surge');
+        assert.equal((await page.$$('#fmBody tr[data-sym]')).length, 0);
+        await page.selectOption('#fmType', 'breakout');
+        await page.check('#fmOpen');
+        assert.equal((await page.$$('#fmBody tr[data-sym]')).length, 1);
+        page.once('dialog', d => d.accept());
+        await page.click('#fmClear');
+        assert.equal((await page.$$('#fmBody tr[data-sym]')).length, 0);
     }, browser);
 
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)

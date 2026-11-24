@@ -1016,6 +1016,7 @@
             try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// у деяких браузерах не дозволяє — не критично */ }
             if (id === 'live' && window.renderLive) window.renderLive();
             if (id === 'dens' && window.renderDens) window.renderDens();
+            if (id === 'form' && window.renderForm) window.renderForm();
             if (id === 'terminal') setTimeout(window.drawChart, 50);
             if (id === 'velesbot') window.updateBotGridPreview();
             if (id === 'screener') window.scanTop20();

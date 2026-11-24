@@ -182,7 +182,9 @@
             if (socket) { try { socket.onclose = null; socket.close(); } catch (e) { /* вже закрито */ } socket = null; }
         }
 
-        return { start, stop, getRows, tick };
+        const getCandles = symbol => candles.get(symbol) || [];
+
+        return { start, stop, getRows, getCandles, tick };
     }
 
     const api = { createFeed, DEFAULTS };
