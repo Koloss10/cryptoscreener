@@ -52,7 +52,7 @@ button:active { transform: scale(.98); }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
-@media (min-width: 640px) { nav.grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+@media (min-width: 640px) { nav.grid { grid-template-columns: repeat(9, minmax(0, 1fr)); } }
 
 /* --- вкладка «Скринер» (live) --- */
 .lv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }

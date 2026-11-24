@@ -300,6 +300,84 @@ async function run(name, fn, browser) {
         assert.equal(await page.isChecked('#lvCryptoOnly'), false);
     }, browser);
 
+
+    // --- вкладка «Плотності»: книги ордерів з підробленого fapi /depth ---
+    const depthFixture = (wallQty) => {
+        const bids = [], asks = [];
+        for (let i = 0; i < 60; i++) { bids.push([(99.9 - i * 0.1).toFixed(2), '10']); asks.push([(100.1 + i * 0.1).toFixed(2), '10']); }
+        asks[10][1] = String(wallQty);                       // стіна на 101.1 (≈ +1.1% від ціни)
+        return { lastUpdateId: 1, T: 5, bids, asks };
+    };
+    async function densSetup(page, { status = 200, wallQty = 3000 } = {}) {
+        await liveSetup(page);
+        await page.route('**/fapi/v1/depth**', route => route.fulfill({
+            status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+            body: status === 200 ? JSON.stringify(depthFixture(wallQty)) : '{}'
+        }));
+        await page.click('#nav-dens');
+        for (let i = 0; i < 3; i++) await page.evaluate(() => window.densFeed.pollOnce());   // по колу: BTC, ETH, 1000PEPE
+    }
+
+    await run('density tab lists walls with size, distance, eat time and book depth', async page => {
+        await densSetup(page);
+        const rows = await page.$$eval('#dsBody tr[data-sym]', trs => trs.map(t => t.textContent.replace(/\s+/g, ' ')));
+        assert.equal(rows.length, 3);
+        assert.match(rows[0], /ПРОДАВЦІ/);
+        assert.match(rows[0], /\$30[0-9.]*K/);              // 101.1 × 3000 ≈ $303.3K
+        assert.match(rows[0], /×\d+/);
+        assert.match(rows[0], /1\.\d\d%/);                   // відстань ≈ 1.1%
+        assert.match(rows[0], /хв/);
+        assert.match(rows[0], /±\d/);                        // глибина книги
+        assert.equal(await page.textContent('#dsStatus'), 'Наживо');
+    }, browser);
+
+    await run('density tab: size and distance filters narrow the list and are remembered', async page => {
+        await densSetup(page);
+        await page.fill('#dsMinUsd', '500');                 // $500K > $303K
+        assert.equal((await page.$$('#dsBody tr[data-sym]')).length, 0);
+        await page.fill('#dsMinUsd', '100');
+        await page.fill('#dsMaxDist', '0.5');                // стіна на ≈ 1.1%
+        assert.equal((await page.$$('#dsBody tr[data-sym]')).length, 0);
+        await page.fill('#dsMaxDist', '2');
+        assert.equal((await page.$$('#dsBody tr[data-sym]')).length, 3);
+        await page.reload(); await page.waitForTimeout(300);
+        assert.equal(await page.inputValue('#dsMinUsd'), '100');
+    }, browser);
+
+    await run('density wall is drawn on the chart layer and a row click opens that symbol', async page => {
+        await densSetup(page);
+        assert.ok(await page.evaluate(() => window.densFeed.forSymbol('BTCUSDT').length) > 0);
+        await page.click('#dsBody tr[data-sym="1000PEPEUSDT"]');
+        assert.equal(await page.evaluate(() => app.sym), '1000PEPEUSDT');
+        assert.equal(await page.evaluate(() => window.app.layers.dens), true);
+        await page.evaluate(() => window.drawChart());       // шар не має кидати помилок (run() перевіряє pageerror)
+    }, browser);
+
+    await run('density tab shows a pause when Binance rate-limits (HTTP 429)', async page => {
+        await densSetup(page, { status: 429 });
+        assert.equal(await page.textContent('#dsStatus'), 'Ліміт Binance: пауза');
+        assert.equal((await page.$$('#dsBody tr[data-sym]')).length, 0);
+    }, browser);
+
+    await run('density polling stays idle while neither densities nor chart are on screen', async page => {
+        let depthCalls = 0;
+        await liveSetup(page);
+        await page.route('**/fapi/v1/depth**', route => { depthCalls++; return route.abort(); });
+        await page.evaluate(() => window.densFeed.pollOnce());   // відкрита вкладка «Скринер»
+        assert.equal(depthCalls, 0);
+    }, browser);
+
+
+    await run('tab is kept in the URL hash and a #dens link opens that tab', async page => {
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.route('**/fapi/v1/**', r => r.abort());
+        await page.goto(PAGE + '#dens'); await page.waitForTimeout(500);
+        assert.equal(await page.$eval('#view-dens', e => e.classList.contains('hidden')), false);
+        assert.equal(await page.$eval('#view-live', e => e.classList.contains('hidden')), true);
+        await page.click('#nav-terminal');
+        assert.match(await page.evaluate(() => location.hash), /#terminal/);
+    }, browser);
+
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)
     const server = http.createServer((req, res) => {
         const f = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url.split('?')[0]);

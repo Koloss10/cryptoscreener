@@ -84,6 +84,8 @@
         window.openTab('terminal', document.getElementById('nav-terminal'));
     }
 
+    window.openFuturesChart = openSymbol;      // спільно з вкладкою «Плотності»
+
     function bind() {
         document.getElementById('lvHead').addEventListener('click', e => {
             const th = e.target.closest('th[data-k]');

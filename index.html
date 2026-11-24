@@ -56,9 +56,10 @@
         </div>
     </header>
 
-    <!-- НАВІГАЦІЯ ВКЛАДОК (8 РОЗДІЛІВ) -->
+    <!-- НАВІГАЦІЯ ВКЛАДОК (9 РОЗДІЛІВ) -->
     <nav class="grid grid-cols-3 gap-1.5 mb-2.5 bg-[#131722] p-1.5 rounded-xl border border-[#1e2433]">
         <button id="nav-live" onclick="window.openTab('live',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📡 Скринер</button>
+        <button id="nav-dens" onclick="window.openTab('dens',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🧱 Плотності</button>
         <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📈 Термінал</button>
         <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот (симуляція)</button>
         <button id="nav-backtest" onclick="window.openTab('backtest',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-amber-300">🧪 Veles Бектест</button>
@@ -91,6 +92,23 @@
         <p class="lv-note">Топ-40 USDT-ф'ючерсів за обсягом. Дані Binance Futures по WebSocket, метрики оновлюються раз на 2 с. Підсвітка: NATR ≥ 2% і сплеск обсягу ≥ ×3. Клік по рядку відкриває графік. Це аналітика, а не рекомендація.</p>
     </section>
 
+    <section id="view-dens" class="tab-view hidden panel p-3.5">
+        <div class="lv-top">
+            <h2>🧱 Плотності в стакані (Binance Futures)</h2>
+            <span id="dsCount" class="lv-mu" style="font-size:12px"></span>
+            <span id="dsStatus" class="lv-chip" data-s="connecting">Очікування</span>
+        </div>
+        <div class="lv-filters">
+            <label>Розмір від, тис. $<input id="dsMinUsd" type="number" min="0" step="50" inputmode="decimal"></label>
+            <label>Відстань до ціни до, %<input id="dsMaxDist" type="number" min="0.05" step="0.1" inputmode="decimal"></label>
+        </div>
+        <p id="dsDetail" class="lv-note lv-warn" role="status" hidden></p>
+        <div class="lv-wrap">
+            <table class="lv-table"><thead id="dsHead"></thead><tbody id="dsBody"></tbody></table>
+        </div>
+        <p class="lv-note">Крупні лімітні заявки в книзі: рівень, що в ≥ 8 разів більший за медіанний рівень свого боку. Книга береться по 1000 рівнів, тому видно лише в межах колонки «Глибина книги» (для BTC це лише десяті частки відсотка, для дрібних монет — кілька %). Монети опитуються по черзі, тож кожна оновлюється раз на ≈ 75 с; монета з відкритого графіка — частіше. «Розїдання» — за скільки хвилин плотність зʼїсть поточний обсяг торгів. Заявки можуть зникнути до того, як ціна їх торкнеться. Це аналітика, а не рекомендація.</p>
+    </section>
+
     <main id="view-terminal" class="tab-view hidden space-y-2.5">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
             <div class="lg:col-span-8 space-y-2.5">
@@ -101,6 +119,7 @@
                     </div>
 
                     <div id="layerBar" class="flex flex-wrap gap-1.5 mb-2">
+                        <button onclick="window.toggleLayer('dens',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🧱 Плотності</button>
                         <button onclick="window.toggleLayer('mtf',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🎯 MTF Зони</button>
                         <button onclick="window.toggleLayer('fib',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🌀 Фібоначчі</button>
                         <button onclick="window.toggleLayer('smc',this)" class="layer-on px-2 py-1 rounded border border-slate-700 text-[11px] font-bold">🧠 SMC (OB/FVG)</button>
@@ -630,7 +649,10 @@
     <script src="analysis.js" defer></script>
     <script src="metrics.js" defer></script>
     <script src="feed.js" defer></script>
+    <script src="density.js" defer></script>
+    <script src="density-feed.js" defer></script>
     <script src="app.js" defer></script>
     <script src="live.js" defer></script>
+    <script src="dens.js" defer></script>
 </body>
 </html>

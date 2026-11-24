@@ -28,7 +28,7 @@
         window.app = {
             sym: 'BTCUSDT', tf: '1h', tvTf: '60', mode: 'canvas',
             candles: [], visibleBars: 55, panOffset: 0, reqId: 0, preferFutures: true, dataSrc: '', inFlightKey: null, dataState: 'loading', scrDemo: false, scrTf: '',
-            layers: { mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
+            layers: { dens: true, mtf: true, fib: true, smc: true, pat: true, can: true, vpvr: true, liq: true, botgrid: true },
             btMods: { smc: true, sr: true, fib: true, pa: false, ta: false, liq: false, rsi: true, st: false, macd: false, bb: false, ema: false, ichi: false, vwap: false, stoch: false },
             bot: {
                 exchange: 'Binance',
@@ -818,6 +818,19 @@
                 ctx.beginPath(); ctx.moveTo(cW * 0.35, py(liqBot)); ctx.lineTo(cW, py(liqBot)); ctx.stroke();
             }
 
+            // Плотності з книги ордерів (density-feed): лінії зі стороною й розміром; поза видимим діапазоном цін не малюємо
+            if (app.layers.dens && window.densFeed) {
+                ctx.font = 'bold 9px sans-serif';
+                window.densFeed.forSymbol(app.sym).forEach(w => {
+                    const y = py(w.price);
+                    if (y < padT || y > padT + cH) return;
+                    const color = w.side === 'bid' ? '#34D399' : '#FB7185';
+                    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(cW * 0.2, y); ctx.lineTo(cW, y); ctx.stroke();
+                    ctx.fillText(`🧱 $${fmtK(w.usd)}${w.eatMin !== null ? ' · ~' + (w.eatMin < 1 ? '<1' : Math.round(w.eatMin)) + ' хв' : ''}`, cW * 0.21, y - 3);
+                });
+            }
+
             if (app.layers.smc) {
                 for (let i = 3; i < slice.length; i++) {
                     const c0 = slice[i-2], c1 = slice[i-1], c2 = slice[i];
@@ -1000,7 +1013,9 @@
             document.querySelectorAll('.t-btn').forEach(b => b.className = "t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400");
             if (btn) btn.className = "t-btn gold-btn py-1.5 px-2 rounded-lg text-xs";
 
+            try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// у деяких браузерах не дозволяє — не критично */ }
             if (id === 'live' && window.renderLive) window.renderLive();
+            if (id === 'dens' && window.renderDens) window.renderDens();
             if (id === 'terminal') setTimeout(window.drawChart, 50);
             if (id === 'velesbot') window.updateBotGridPreview();
             if (id === 'screener') window.scanTop20();
@@ -1130,6 +1145,8 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
+            const tabId = location.hash.slice(1);   // посилання на вкладку: …/#dens
+            if (tabId && document.getElementById('nav-' + tabId)) window.openTab(tabId, document.getElementById('nav-' + tabId));
             const sel = document.getElementById('coinSelect');
             sel.innerHTML = COINS.map(s => `<option value="${s}">${s.replace('USDT', ' / USDT')}</option>`).join('');
             sel.value = app.sym;
