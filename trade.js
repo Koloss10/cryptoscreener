@@ -13,7 +13,7 @@
     const TC = window.TradeCore;
 
     const state = { ex: 'bybit', signedIn: false, aal: null, conns: {}, bots: [], botsLoaded: false, balance: null, positions: null,
-        busy: false, msg: '', lastOrderAt: 0, hint: '' };
+        busy: false, msg: '', lastOrderAt: 0, hint: '', symbol: undefined, notional: '100', lev: '3', timeoutMs: CALL_TIMEOUT_MS };
     let SB = null;
 
     const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -54,21 +54,34 @@
     const gate = () => TC.canTrade({ signedIn: state.signedIn, aal: state.aal, conn: state.conns[state.ex] || null, botsLoaded: state.botsLoaded });
 
     // Один виклик серверної функції; помилки перекладаються як в Orbix. Автоповторів немає.
+    // Лише власна JSON-відповідь функції з полем error — «точно відмова». Усе інше (обрив мережі, 5xx платформи, таймаут)
+    // означає, що ордер міг виконатись: e.unknown = true.
     async function call(action, params) {
         const body = TC.buildBody(state.ex, action, params);
         const sb = client();
         if (!sb || !state.signedIn) throw new Error(TC.mapError('unauthorized', null, state.ex));
         let timer;
-        const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('Відповідь не отримано вчасно.'), { unknown: true })), CALL_TIMEOUT_MS); });
+        const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('Відповідь не отримано вчасно.'), { unknown: true })), state.timeoutMs); });
         try {
-            const r = await Promise.race([sb.functions.invoke('exchange', { body }), timeout]);
+            let r;
+            try { r = await Promise.race([sb.functions.invoke('exchange', { body }), timeout]); }
+            catch (e) { throw e.unknown ? e : Object.assign(new Error('Звʼязок із сервером перервано.'), { unknown: true }); }
             if (r.error) {
-                let m = r.error.message, c = null;
-                try { const j = await r.error.context.json(); m = j.error || m; c = j.code === undefined ? null : j.code; } catch (e) { /* тіло не JSON — лишаємо загальне повідомлення */ }
-                throw new Error(TC.mapError(m, c, state.ex));
+                let j = null;
+                try { j = await r.error.context.json(); } catch (e) { /* тіло не JSON */ }
+                if (j && typeof j.error === 'string') throw Object.assign(new Error(TC.mapError(j.error, j.code === undefined ? null : j.code, state.ex)), { definite: true });
+                throw Object.assign(new Error('Сервер відповів без пояснення (' + (r.error.name || 'помилка') + ').'), { unknown: true });
             }
             return r.data;
         } finally { clearTimeout(timer); }
+    }
+
+    // Свіжий список ботів безпосередньо перед ордером/закриттям; не вдалося прочитати — торгівлю зупиняємо
+    async function freshBots() {
+        const sb = client();
+        const b = sb ? await sb.from('bots').select('id,name,symbol,status,config') : { error: true };
+        if (b.error) { state.botsLoaded = false; throw new Error('Не вдалося перевірити ботів Orbix — ордер не надіслано.'); }
+        state.bots = b.data || []; state.botsLoaded = true;
     }
 
     function setBusy(on) { state.busy = on; document.querySelectorAll('#view-trade [data-act]').forEach(b => { b.disabled = on; }); }
@@ -93,10 +106,13 @@
     const doOrder = side => guarded(async () => {
         const g = gate();
         if (!g.ok) throw new Error(g.reason);
-        const body = TC.buildBody(state.ex, 'order', { symbol: String($('trSym').value || '').trim().toUpperCase(), side, notional: $('trNotional').value, leverage: $('trLev').value });
+        const body = TC.buildBody(state.ex, 'order', { symbol: String(state.symbol || '').trim().toUpperCase(), side, notional: state.notional, leverage: state.lev });
+        await freshBots();
         if (pairBlocked(body.symbol)) throw new Error(blockedMsg(body.symbol));
         if (Date.now() - state.lastOrderAt < MIN_ORDER_GAP_MS) throw new Error('Занадто часто: зачекайте кілька секунд.');
         if (!window.confirm(TC.describeOrder(body))) { state.msg = 'Скасовано.'; return; }
+        await freshBots();                                  // бота могли запустити, поки відкритий діалог
+        if (pairBlocked(body.symbol)) throw new Error(blockedMsg(body.symbol));
         state.lastOrderAt = Date.now();
         state.msg = 'Надсилаю ордер…'; render();
         try {
@@ -105,8 +121,11 @@
             state.msg = `Виконано: ${o.side === 'BUY' ? 'купівля' : 'продаж'} ${o.qty} ${o.symbol} за ${o.approx ? '≈' : ''}${n2(o.price, 4)} (біржа: ${TC.EXCHANGES[state.ex].short}). Стопу на біржі немає.`;
         } catch (e) {
             // Результат ордера міг бути невідомим (таймаут): повторно НЕ надсилаємо, а показуємо справжні позиції
-            state.msg = 'Помилка: ' + e.message + (e.unknown ? ' Результат невідомий — перевірте позиції нижче.' : ' Ордер, найімовірніше, не виконано — перевірте позиції.');
-            try { await loadPositions(); } catch (e2) { /* позиції недоступні — користувач побачить помилку вище */ }
+            state.msg = e.unknown
+                ? 'Результат невідомий: ' + e.message + ' Ордер МІГ виконатись — перевірте позиції нижче.'
+                : 'Помилка: ' + e.message + ' Біржа ордер не виконала.';
+            try { await loadPositions(); }
+            catch (e2) { if (e.unknown) state.msg += ' Позиції теж не вдалося отримати: перевірте їх на біржі вручну.'; }
             return;
         }
         try { await loadPositions(); } catch (e) { /* ордер виконано; позиції оновіть кнопкою */ }
@@ -115,8 +134,11 @@
     const doClose = symbol => guarded(async () => {
         const g = gate();
         if (!g.ok) throw new Error(g.reason);
+        await freshBots();
         if (pairBlocked(symbol)) throw new Error(blockedMsg(symbol));
         if (!window.confirm(`${TC.EXCHANGES[state.ex].short.toUpperCase()}: закрити ВСЮ позицію ${symbol} за ринком?`)) { state.msg = 'Скасовано.'; return; }
+        await freshBots();
+        if (pairBlocked(symbol)) throw new Error(blockedMsg(symbol));
         state.msg = 'Закриваю позицію…'; render();
         const r = await call('close', { symbol });
         state.msg = r.closed ? `Позицію закрито за ${n2(r.order && r.order.price, 4)}.` : 'Позиції за цією парою немає.';
@@ -159,12 +181,13 @@
             const pre = state.hint ? `<p class="lv-note">Сигнал: <b>${esc(state.hint)}</b> — це лише підказка, ордер не надсилається автоматично.</p>` : '';
             html += `<div class="lv-row"><button type="button" class="lv-btn" data-act="check">Баланс і перевірка ключа</button><button type="button" class="lv-btn" data-act="positions">Позиції</button></div>`;
             if (state.balance) html += `<p class="lv-note">Гаманець: <b>${n2(state.balance.wallet)}</b> USDT · доступно: <b>${n2(state.balance.available)}</b> · нереалізований PnL: <b>${n2(state.balance.unrealized)}</b></p>`;
-            html += `${pre}<div class="lv-filters"><label>Пара<input id="trSym" list="trSyms" value="${esc(state.symbol || (window.app ? window.app.sym : 'BTCUSDT'))}" autocomplete="off" spellcheck="false"></label>`
+            if (state.symbol === undefined) state.symbol = window.app ? window.app.sym : 'BTCUSDT';      // лише початкове значення
+            html += `${pre}<div class="lv-filters"><label>Пара<input id="trSym" list="trSyms" value="${esc(state.symbol)}" autocomplete="off" spellcheck="false"></label>`
                 + `<datalist id="trSyms">${symbols.map(s => `<option value="${esc(s)}"></option>`).join('')}</datalist>`
-                + `<label>Сума, USDT (з плечем)<input id="trNotional" type="number" min="${TC.LIMITS.minNotional}" max="${TC.LIMITS.maxNotional}" step="10" inputmode="decimal" value="100"></label>`
-                + `<label>Плече, ×<input id="trLev" type="number" min="1" max="${TC.LIMITS.maxLeverage}" step="1" inputmode="numeric" value="3"></label></div>`
+                + `<label>Сума, USDT (з плечем)<input id="trNotional" type="number" min="${TC.LIMITS.minNotional}" max="${TC.LIMITS.maxNotional}" step="10" inputmode="decimal" value="${esc(state.notional)}"></label>`
+                + `<label>Плече, ×<input id="trLev" type="number" min="1" max="${TC.LIMITS.maxLeverage}" step="1" inputmode="numeric" value="${esc(state.lev)}"></label></div>`
                 + `<div class="lv-row"><button type="button" class="lv-btn lv-buy" id="trBuy" data-act="buy">Купити (Long)</button><button type="button" class="lv-btn lv-sell" id="trSell" data-act="sell">Продати (Short)</button></div>`
-                + `<p class="lv-note">Ринковий ордер без стопа й тейку на біржі. Макс. сума ${TC.LIMITS.maxNotional} USDT, плече до ${TC.LIMITS.maxLeverage}×. Пари з ботами Orbix заблоковано.</p>`;
+                + `<p class="lv-note">Ринковий ордер без стопа й тейку на біржі. Макс. сума ${TC.LIMITS.maxNotional} USDT, плече до ${TC.LIMITS.maxLeverage}×. Пари з ботами Orbix заблоковано. Маржа демо-рахунку спільна з ботами: велика ручна позиція може лишити їм мало вільних коштів.</p>`;
         }
         html += posTable();
         html += `<p class="lv-note" id="trMsg" role="status">${esc(state.msg)}</p>`;   // повідомлення можуть містити текст із сервера — екрануємо
@@ -173,6 +196,12 @@
     }
 
     function bind() {
+        // Значення полів зберігаємо в state: перемальовування (після «Позиції», «Баланс», помилки) не повинне їх скидати
+        $('trBody').addEventListener('input', e => {
+            if (e.target.id === 'trSym') state.symbol = e.target.value.trim().toUpperCase();
+            else if (e.target.id === 'trNotional') state.notional = e.target.value;
+            else if (e.target.id === 'trLev') state.lev = e.target.value;
+        });
         $('trBody').addEventListener('click', e => {
             const ex = e.target.closest('[data-ex]');
             if (ex) return switchEx(ex.dataset.ex);

@@ -461,7 +461,7 @@ async function run(name, fn, browser) {
     const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
 
     async function tradeSetup(page, { session = fakeSession('aal2', VERIFIED), conns, bots = [], fn } = {}) {
-        const calls = { exchange: [], auth: 0, rest: [] };
+        const calls = { exchange: [], auth: 0, rest: [], botsRef: { list: bots, fail: false } };
         const conn = conns || [{ id: 'c1', exchange: 'bybit', status: 'active', key_hint: 'ab12', can_trade: true, last_checked_at: null }];
         await page.addInitScript(([key, s]) => {
             window.WebSocket = class { close() {} };
@@ -475,11 +475,14 @@ async function run(name, fn, browser) {
             if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS });
             if (url.pathname.startsWith('/auth/')) { calls.auth++; return json(400, { error: 'unexpected auth call' }); }
             if (url.pathname.startsWith('/rest/v1/exchange_connections')) { calls.rest.push('exchange_connections'); return json(200, conn); }
-            if (url.pathname.startsWith('/rest/v1/bots')) { calls.rest.push('bots'); return json(200, bots); }
+            if (url.pathname.startsWith('/rest/v1/bots')) { calls.rest.push('bots'); return calls.botsRef.fail ? json(500, { message: 'boom' }) : json(200, calls.botsRef.list); }
             if (url.pathname === '/functions/v1/exchange') {
                 const body = JSON.parse(req.postData() || '{}');
                 calls.exchange.push(body);
                 const r = (fn && fn(body)) || { status: 200, json: { ok: true, positions: [], canTrade: true, wallet: 1000, available: 900, unrealized: 5 } };
+                if (r.delay) await new Promise(res => setTimeout(res, r.delay));
+                if (r.abort) return route.abort();
+                if (r.raw !== undefined) return route.fulfill({ status: r.status, contentType: 'text/html', headers: CORS, body: r.raw });
                 return json(r.status, r.json);
             }
             return json(404, {});
@@ -536,7 +539,7 @@ async function run(name, fn, browser) {
         });
         acceptDialogs(page, seen);
         await page.fill('#trSym', 'BTCUSDT');
-        await page.click('#trBuy');
+        await page.click('#trBuy'); await page.waitForTimeout(300);
         assert.match(await page.textContent('#trMsg'), /працює бот Orbix/);
         assert.equal(seen.length, 0);                                                     // підтвердження навіть не показували
         await page.click('[data-act="positions"]'); await page.waitForTimeout(300);
@@ -610,6 +613,76 @@ async function run(name, fn, browser) {
         await page.click('[data-act="check"]'); await page.waitForTimeout(300);
         assert.equal(await page.locator('#pwn').count(), 0);
         assert.match(await page.textContent('#trMsg'), /<b id="pwn">boom<\/b>/);
+    }, browser);
+
+
+    await run('trade: typed pair, sum and leverage survive «Позиції» and a validation error (no silent reset)', async page => {
+        await tradeSetup(page);
+        await page.fill('#trSym', 'ethusdt'); await page.fill('#trNotional', '150'); await page.fill('#trLev', '5');
+        await page.click('[data-act="positions"]'); await page.waitForTimeout(300);
+        assert.equal(await page.inputValue('#trSym'), 'ETHUSDT');
+        assert.equal(await page.inputValue('#trNotional'), '150');
+        assert.equal(await page.inputValue('#trLev'), '5');
+        await page.fill('#trNotional', '99999');
+        await page.click('#trBuy'); await page.waitForTimeout(200);
+        assert.equal(await page.inputValue('#trSym'), 'ETHUSDT');
+        assert.equal(await page.inputValue('#trNotional'), '99999');
+    }, browser);
+
+    await run('trade: the bot list is re-read right before an order: a bot started after the page opened still blocks the pair', async page => {
+        const seen = [];
+        const calls = await tradeSetup(page);
+        acceptDialogs(page, seen);
+        calls.botsRef.list = [{ id: 'b9', symbol: 'ETH/USDT', status: 'running', config: { _srv: true, _tn: true, _ex: 'bybit' } }];   // бота запустили вже після відкриття вкладки
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(300);
+        assert.match(await page.textContent('#trMsg'), /працює бот Orbix/);
+        assert.equal(seen.length, 0);
+        assert.equal(calls.exchange.filter(b => b.action === 'order').length, 0);
+    }, browser);
+
+    await run('trade: if the bot list cannot be read the order is not sent (fail closed)', async page => {
+        const seen = [];
+        const calls = await tradeSetup(page);
+        acceptDialogs(page, seen);
+        calls.botsRef.fail = true;
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(300);
+        assert.match(await page.textContent('#trMsg'), /Не вдалося перевірити ботів Orbix/);
+        assert.equal(calls.exchange.filter(b => b.action === 'order').length, 0);
+    }, browser);
+
+    await run('trade: a timeout is reported as an UNKNOWN outcome, the order is sent once, and positions are checked', async page => {
+        const calls = await tradeSetup(page, { fn: b => (b.action === 'order' ? { status: 200, json: { ok: true }, delay: 1500 } : null) });
+        page.on('dialog', d => d.accept());
+        await page.evaluate(() => { window.tradeState.timeoutMs = 200; });
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(900);
+        assert.equal(calls.exchange.filter(b => b.action === 'order').length, 1);
+        assert.match(await page.textContent('#trMsg'), /Результат невідомий/);
+        assert.match(await page.textContent('#trMsg'), /МІГ виконатись/);
+        assert.equal(calls.exchange.filter(b => b.action === 'positions').length, 1);
+    }, browser);
+
+    await run('trade: a dropped connection or a platform error page is also an unknown outcome, never «not executed»', async page => {
+        const calls = await tradeSetup(page, { fn: b => (b.action === 'order' ? { abort: true } : { status: 502, raw: '<html>Bad gateway</html>' }) });
+        page.on('dialog', d => d.accept());
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(700);
+        const msg = await page.textContent('#trMsg');
+        assert.match(msg, /Результат невідомий/);
+        assert.match(msg, /вручну/);                                                    // позиції теж недоступні — прямо кажемо перевірити на біржі
+        assert.doesNotMatch(msg, /не виконала/);
+        assert.equal(calls.exchange.filter(b => b.action === 'order').length, 1);
+    }, browser);
+
+    await run('trade: the function\'s own JSON error is a definite refusal', async page => {
+        await tradeSetup(page, { fn: b => (b.action === 'order' ? { status: 502, json: { error: 'order too small: min 5.00 USDT' } } : null) });
+        page.on('dialog', d => d.accept());
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(400);
+        assert.match(await page.textContent('#trMsg'), /Біржа ордер не виконала/);
+        assert.match(await page.textContent('#trMsg'), /мінімум 5\.00 USDT/);
     }, browser);
 
     await run('trade: the 🛒 button on a formation only prefills the pair and never sends an order', async page => {
