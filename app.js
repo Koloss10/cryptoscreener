@@ -83,6 +83,7 @@
                 const bodies = new Map();
                 await Promise.all([...css, ...scripts].map(m => text(m[1]).then(t => bodies.set(m[0], t))));
                 const out = html
+                    .replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/, '')
                     .replace(/<link rel="stylesheet" href="([^":]+)">/g, m => `<style>\n${bodies.get(m)}</style>`)
                     .replace(/<script src="([^":]+)" defer><\/script>/g, (m, path) => path.startsWith('vendor/')
                         // webpack-бібліотеці потрібна адреса власного скрипта (publicPath): інлайн-скрипт її не має, data-URL має
