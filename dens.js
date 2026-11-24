@@ -108,7 +108,7 @@
                 .filter(r => r.vol24 !== null).sort((a, b) => b.vol24 - a.vol24).slice(0, UNIVERSE)
                 .map(r => ({ symbol: r.symbol, vol1h: r.vol1h, vol24: r.vol24 })),
             getPriority: () => (visible('view-terminal') && window.app ? window.app.sym : null),
-            isActive: () => !document.hidden && (visible('view-dens') || visible('view-terminal')),
+            isActive: () => !document.hidden && (visible('view-dens') || visible('view-terminal') || visible('view-form')),
             onUpdate: () => { render(); if (visible('view-terminal') && window.app.layers.dens) window.drawChart(); },
             onStatus: (s, detail) => { state.status = s; state.detail = detail || ''; render(); },
             opts: { minUsd: 100000, minRatio: 8, maxDistPct: 5, perSide: 3 }

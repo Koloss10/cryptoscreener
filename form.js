@@ -38,8 +38,9 @@
         const fresh = [];
         for (const row of feed.getRows()) {
             const cs = feed.getCandles(row.symbol);
+            if (!window.Formations.isFresh(cs, now)) continue;        // сон пристрою або обрив: старі свічки не аналізуємо
             candlesBy.set(row.symbol, cs);
-            const walls = window.densFeed ? window.densFeed.forSymbol(row.symbol) : [];
+            const walls = window.Formations.freshWalls(window.densFeed ? window.densFeed.forSymbol(row.symbol) : [], now);
             fresh.push(...window.Formations.detect(row.symbol, cs, { walls }));
         }
         const before = state.signals;
@@ -47,7 +48,8 @@
         const added = next.filter(s => !before.some(b => b.id === s.id));
         next = next.map(s => {
             if (s.status !== 'open') return s;
-            const cs = candlesBy.get(s.symbol) || [];
+            const cs = candlesBy.get(s.symbol);
+            if (!cs) return s;                                         // немає свіжих даних — не вирішуємо за відсутності фактів
             const res = window.Formations.evaluate(s, cs.slice(0, -1), now);
             return res.status === s.status ? s : { ...s, ...res };
         });
@@ -76,8 +78,9 @@
         if (!t) return '<td class="lv-mu">—</td>';
         const wr = t.winrate === null ? '—' : t.winrate.toFixed(0) + '%';
         const r = t.avgR === null ? '' : ` · ${rText(t.avgR)}`;
+        const net = t.avgNetR === null ? '' : `<span class="${t.avgNetR >= 0 ? 'lv-up' : 'lv-dn'}"> (нетто ${rText(t.avgNetR)})</span>`;
         const open = t.open ? `<span class="lv-mu"> (${t.open} відкр.)</span>` : '';
-        return `<td>${t.n}${open}<span class="lv-mu"> · </span>${wr}${r}</td>`;
+        return `<td>${t.n}${open}<span class="lv-mu"> · </span>${wr}${r}${net}</td>`;
     }
 
     function render() {

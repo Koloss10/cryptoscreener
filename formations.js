@@ -23,6 +23,11 @@
         cooldownMs: 30 * MIN,    // повторна формація того ж типу й боку по монеті — не раніше ніж за 30 хв
         horizonMs: 60 * MIN,     // скільки чекаємо тейк/стоп, потім «закінчився час»
         coverGapMs: 2 * MIN,     // перша свічка після сигналу має бути не пізніше за це, інакше шлях невідомий
+        gapMs: 1.5 * MIN,        // між сусідніми свічками більший розрив = пропуск у даних (сон пристрою, обрив)
+        endTolMs: 2 * MIN,       // для закриття «за часом» свічки мають сягати кінця горизонту з цією точністю
+        staleMs: 3 * MIN,        // дані старші за це не аналізуємо
+        wallFreshMs: 3 * MIN,    // плотність без оновлення довше за 3 хв вважається застарілою
+        feePct: 0.1,             // кругова комісія тейкера, % позиції (для «нетто»)
         maxSignals: 500
     };
 
@@ -135,47 +140,60 @@
     }
 
     // Результат відкритого сигналу за закритими свічками після нього. Стоп і тейк в одній свічці = стоп (консервативно).
+    // Пропуск у даних (сон пристрою, обрив зʼєднання) результат не вигадує: сигнал лишається відкритим, а коли час
+    // вийшов, а шлях відновити неможливо — «unknown».
     function evaluate(sig, closedCandles, now) {
         const after = closedCandles.filter(c => c.time > sig.time);
         const expired = now - sig.time >= P.horizonMs;
-        const covered = after.length > 0 && after[0].time - sig.time <= P.coverGapMs;
-        if (!covered) return expired ? { status: 'unknown', r: null } : { status: 'open', r: null };
+        const unresolved = () => (expired ? { status: 'unknown', r: null } : { status: 'open', r: null });
         const risk = Math.abs(sig.entry - sig.stop), reward = Math.abs(sig.take - sig.entry) / risk;
         const long = sig.side === 'long';
+        let prev = sig.time, lastInside = null;
         for (const c of after) {
             if (c.time > sig.time + P.horizonMs) break;
+            if (c.time - prev > (prev === sig.time ? P.coverGapMs : P.gapMs)) return unresolved();
             if (long ? c.low <= sig.stop : c.high >= sig.stop) return { status: 'loss', r: -1, closedAt: c.time };
             if (long ? c.high >= sig.take : c.low <= sig.take) return { status: 'win', r: reward, closedAt: c.time };
+            prev = c.time; lastInside = c;
         }
         if (!expired) return { status: 'open', r: null };
-        const inside = after.filter(c => c.time <= sig.time + P.horizonMs);
-        const exit = inside[inside.length - 1];
-        return { status: 'expired', r: ((long ? exit.close - sig.entry : sig.entry - exit.close) / risk), closedAt: exit.time };
+        if (!lastInside || lastInside.time < sig.time + P.horizonMs - P.endTolMs) return { status: 'unknown', r: null };
+        return { status: 'expired', r: ((long ? lastInside.close - sig.entry : sig.entry - lastInside.close) / risk), closedAt: lastInside.time };
     }
 
-    // Статистика за вікно: winrate = перемоги / (перемоги + програші); avgR — по всіх завершених із відомим результатом
-    function stats(signals, windowMs, now) {
+    // Свіжість даних і плотностей: після сну пристрою чи обриву старі свічки/стіни не аналізуємо
+    const isFresh = (candles, now) => candles.length > 0 && now - candles[candles.length - 1].time <= P.staleMs;
+    const freshWalls = (walls, now) => (walls || []).filter(w => w.updatedAt && now - w.updatedAt <= P.wallFreshMs);
+
+    // Статистика за вікно: winrate = перемоги / (перемоги + програші); avgR — по всіх завершених із відомим результатом;
+    // avgNetR — те саме після кругової комісії (feePct % позиції = feePct / ризик% у R)
+    function stats(signals, windowMs, now, feePct = P.feePct) {
         const out = {};
         for (const s of signals) {
             if (now - s.time > windowMs) continue;
-            const t = out[s.type] || (out[s.type] = { n: 0, open: 0, unknown: 0, wins: 0, losses: 0, expired: 0, winrate: null, avgR: null, _r: [] });
+            const t = out[s.type] || (out[s.type] = { n: 0, open: 0, unknown: 0, wins: 0, losses: 0, expired: 0, winrate: null, avgR: null, avgNetR: null, _r: [], _net: [] });
             t.n++;
             if (s.status === 'open') t.open++;
             else if (s.status === 'unknown') t.unknown++;
             else {
                 if (s.status === 'win') t.wins++; else if (s.status === 'loss') t.losses++; else t.expired++;
-                if (typeof s.r === 'number') t._r.push(s.r);
+                if (typeof s.r === 'number') {
+                    t._r.push(s.r);
+                    const riskPct = Math.abs(s.entry - s.stop) / s.entry * 100;
+                    if (riskPct > 0) t._net.push(s.r - feePct / riskPct);
+                }
             }
         }
         for (const t of Object.values(out)) {
             t.winrate = t.wins + t.losses ? (t.wins / (t.wins + t.losses)) * 100 : null;
             t.avgR = t._r.length ? mean(t._r) : null;
-            delete t._r;
+            t.avgNetR = t._net.length ? mean(t._net) : null;
+            delete t._r; delete t._net;
         }
         return out;
     }
 
-    const api = { P, detect, addSignals, evaluate, stats };
+    const api = { P, detect, addSignals, evaluate, stats, isFresh, freshWalls };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.Formations = api;
 })(typeof window !== 'undefined' ? window : globalThis);

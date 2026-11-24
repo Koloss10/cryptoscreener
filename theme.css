@@ -94,3 +94,5 @@ button:active { transform: scale(.98); }
 .lv-filters select { width: 100%; min-height: 40px; background: var(--pan2); border: 1px solid var(--ln); border-radius: 12px; color: var(--tx); padding: 0 10px; font-size: 14px; }
 .lv-btn { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--ln); background: rgba(255, 255, 255, .02); color: var(--tx); font: 500 13px Inter, sans-serif; cursor: pointer; }
 .lv-btn:hover { border-color: var(--dn); color: var(--dn); }
+.lv-stats th, .lv-stats td { white-space: normal; padding: 9px 8px; }
+.lv-stats td:first-child, .lv-stats th:first-child { min-width: 5.5rem; position: static; }

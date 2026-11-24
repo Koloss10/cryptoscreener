@@ -147,3 +147,40 @@ test('stats: winrate and average R per type within a time window; unknown and op
     assert.equal(day.surge, undefined);                                                       // 3000 хв > 24 год
     assert.equal(F.stats(all, Infinity, T0).surge.wins, 1);
 });
+
+test('evaluate: a device that slept does not invent a result (adjacent candles, then the clock jumps)', () => {
+    const early = Array.from({ length: 10 }, (_, k) => bar(1 + k, { o: 100, h: 100.4, l: 99.7, c: 100.2 }));   // 10 хв суцільних свічок
+    const r = F.evaluate(open(), early, T0 + 90 * MIN);
+    assert.equal(r.status, 'unknown');
+    assert.equal(r.r, null);
+    assert.equal(F.evaluate(open(), early, T0 + 30 * MIN).status, 'open');                    // у межах часу — просто чекаємо
+});
+
+test('evaluate: a gap in the middle of the data blocks both closing and invented expiry', () => {
+    const withGap = [...Array.from({ length: 10 }, (_, k) => bar(1 + k, { o: 100, h: 100.4, l: 99.7, c: 100.2 })),
+        ...Array.from({ length: 20 }, (_, k) => bar(50 + k, { o: 100, h: 100.4, l: 99.7, c: 100.2 }))];
+    assert.equal(F.evaluate(open(), withGap, T0 + 90 * MIN).status, 'unknown');
+    assert.equal(F.evaluate(open(), withGap, T0 + 40 * MIN).status, 'open');
+});
+
+test('isFresh: stale candles (after sleep) are not analysed', () => {
+    const cs = [bar(100, { o: 1, h: 1, l: 1, c: 1 })];
+    assert.equal(F.isFresh(cs, T0 + 100 * MIN + 2 * MIN), true);
+    assert.equal(F.isFresh(cs, T0 + 100 * MIN + 10 * MIN), false);
+    assert.equal(F.isFresh([], T0), false);
+});
+
+test('freshWalls keeps only walls refreshed in the last 3 minutes', () => {
+    const now = 10 * MIN;
+    const walls = [{ id: 'new', updatedAt: now - 60000 }, { id: 'old', updatedAt: now - 5 * MIN }, { id: 'never' }];
+    assert.deepEqual(F.freshWalls(walls, now).map(w => w.id), ['new']);
+    assert.deepEqual(F.freshWalls(undefined, now), []);
+});
+
+test('stats: net R subtracts the round-trip fee measured in R (fee% / risk%)', () => {
+    const s = (r, riskPct) => ({ type: 'breakout', status: r > 0 ? 'win' : 'loss', r, time: T0, entry: 100, stop: 100 - riskPct });
+    const st = F.stats([s(2, 0.2), s(-1, 0.2)], Infinity, T0, 0.1).breakout;
+    // комісія 0.1% при ризику 0.2% = 0.5R на угоду → (1.5 + (−1.5)) / 2 = 0
+    assert.ok(Math.abs(st.avgR - 0.5) < 1e-9);
+    assert.ok(Math.abs(st.avgNetR - 0) < 1e-9);
+});
