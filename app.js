@@ -71,6 +71,12 @@
             const scriptClose = '<' + '/script>';
             const safe = (src) => src.replace(/<\/script/gi, '<\\/script');
             const text = (f) => fetch(f).then(r => { if (!r.ok) throw new Error(f); return r.text(); });
+            const toDataUrl = (src) => {
+                const bytes = new TextEncoder().encode(src);
+                let bin = '';
+                for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+                return 'data:text/javascript;charset=utf-8;base64,' + btoa(bin);
+            };
             text('index.html').then(async html => {
                 const css = [...html.matchAll(/<link rel="stylesheet" href="([^":]+)">/g)];
                 const scripts = [...html.matchAll(/<script src="([^":]+)" defer><\/script>/g)];
@@ -78,7 +84,10 @@
                 await Promise.all([...css, ...scripts].map(m => text(m[1]).then(t => bodies.set(m[0], t))));
                 const out = html
                     .replace(/<link rel="stylesheet" href="([^":]+)">/g, m => `<style>\n${bodies.get(m)}</style>`)
-                    .replace(/<script src="([^":]+)" defer><\/script>/g, m => '<script>\n' + safe(bodies.get(m)) + scriptClose);
+                    .replace(/<script src="([^":]+)" defer><\/script>/g, (m, path) => path.startsWith('vendor/')
+                        // webpack-бібліотеці потрібна адреса власного скрипта (publicPath): інлайн-скрипт її не має, data-URL має
+                        ? `<script src="${toDataUrl(bodies.get(m))}">` + scriptClose
+                        : '<script>\n' + safe(bodies.get(m)) + scriptClose);
                 const url = URL.createObjectURL(new Blob([out], { type: 'text/html;charset=utf-8' }));
                 const a = document.createElement('a');
                 a.href = url;
@@ -999,12 +1008,24 @@
             if (m === 'tv') window.loadTV(); else setTimeout(window.drawChart, 50);
         };
 
+        // Сторонній скрипт TradingView вантажимо лише коли він справді потрібен: сторінка ділить origin із сесією Orbix
+        window.loadTradingView = function() {
+            if (window.TradingView) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://s3.tradingview.com/tv.js';
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('tv.js не завантажився'));
+                document.head.appendChild(s);
+            });
+        };
+
         window.loadTV = function() {
             const box = document.getElementById('tvBox');
             box.innerHTML = '';
-            if (typeof TradingView !== 'undefined') {
+            window.loadTradingView().then(() => {
                 new TradingView.widget({ autosize: true, symbol: "BINANCE:" + app.sym, interval: app.tvTf, theme: "dark", style: "1", locale: "uk", studies: ["RSI@tv-basicstudies", "MASimple@tv-basicstudies"], container_id: "tvBox" });
-            }
+            }).catch(() => { box.textContent = 'TradingView недоступний (мережа або блокувальник).'; });
         };
 
         window.openTab = function(id, btn) {
@@ -1017,6 +1038,7 @@
             if (id === 'live' && window.renderLive) window.renderLive();
             if (id === 'dens' && window.renderDens) window.renderDens();
             if (id === 'form' && window.renderForm) window.renderForm();
+            if (id === 'trade' && window.renderTrade) window.renderTrade();
             if (id === 'terminal') setTimeout(window.drawChart, 50);
             if (id === 'velesbot') window.updateBotGridPreview();
             if (id === 'screener') window.scanTop20();
@@ -1095,9 +1117,9 @@
                 const d = document.createElement('div'); d.className = "panel p-2 h-[250px] flex flex-col";
                 d.innerHTML = `<div class="text-xs font-bold text-amber-400 mb-1 flex justify-between"><span>#${i+1} ${s}</span><button onclick="window.changeSymbol('${s}');window.openTab('terminal',document.getElementById('nav-terminal'))" class="text-[10px] text-blue-400">Відкрити →</button></div><div id="mc_${i}" class="flex-1 w-full"></div>`;
                 g.appendChild(d);
-                if (typeof TradingView !== 'undefined') {
+                window.loadTradingView().then(() => {
                     setTimeout(() => new TradingView.widget({ autosize: true, symbol: "BINANCE:" + s, interval: app.tvTf, theme: "dark", hide_side_toolbar: true, container_id: `mc_${i}` }), i * 120);
-                }
+                }).catch(() => { d.insertAdjacentText('beforeend', 'TradingView недоступний'); });
             });
         };
 

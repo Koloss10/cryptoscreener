@@ -31,6 +31,7 @@ async function mockBinance(page, { slowBtc = false } = {}) {
 }
 
 async function run(name, fn, browser) {
+    if (process.env.ONLY && !name.includes(process.env.ONLY)) return;   // ONLY=trade node tests/smoke.js — лише потрібні тести
     const page = await browser.newPage({ viewport: { width: 390, height: 800 } });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -208,7 +209,7 @@ async function run(name, fn, browser) {
         assert.equal(await page.$eval('#view-live', e => e.classList.contains('hidden')), false);
         assert.equal(await page.$eval('#view-terminal', e => e.classList.contains('hidden')), true);
         assert.equal((await page.$$('#lvBody tr[data-sym]')).length, 3);                 // без SOLUSDT_250101 і без акції NVDA
-        assert.equal(await page.$('#lvBody tr[data-sym="NVDAUSDT"]'), null);
+        assert.equal(await page.locator('#lvBody tr[data-sym="NVDAUSDT"]').count(), 0);
         assert.ok(String(await page.evaluate(() => window.__sockets[0].url)).includes('/market/stream?streams='));
         assert.equal(await page.textContent('#lvStatus'), 'Наживо');
         const eth = await page.$eval('#lvBody tr[data-sym="ETHUSDT"]', tr => tr.textContent.replace(/\s+/g, ' '));
@@ -295,7 +296,7 @@ async function run(name, fn, browser) {
             window.liveFeed.tick();
         });
         assert.equal(await page.evaluate(() => window.__sockets.length), 2);                 // старий сокет закрито, відкрито новий
-        assert.notEqual(await page.$('#lvBody tr[data-sym="NVDAUSDT"]'), null);
+        assert.ok((await page.locator('#lvBody tr[data-sym="NVDAUSDT"]').count()) > 0);
         await page.reload(); await page.waitForTimeout(300);
         assert.equal(await page.isChecked('#lvCryptoOnly'), false);
     }, browser);
@@ -447,6 +448,191 @@ async function run(name, fn, browser) {
         assert.equal((await page.$$('#fmBody tr[data-sym]')).length, 0);
     }, browser);
 
+
+    // --- вкладка «Торгівля»: УСІ запити до Supabase підроблено; реальних викликів біржі/Orbix немає ---
+    const SB_KEY_NAME = 'sb-krmnaypaitruhqgaxkfw-auth-token';
+    const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const fakeSession = (aal, factors) => ({
+        access_token: `${b64u({ alg: 'HS256', typ: 'JWT' })}.${b64u({ sub: 'u1', aal, amr: [], role: 'authenticated', exp: 4102444800 })}.sig`,
+        refresh_token: 'r', expires_at: 4102444800, expires_in: 3600, token_type: 'bearer',
+        user: { id: 'u1', aud: 'authenticated', role: 'authenticated', factors, app_metadata: {}, user_metadata: {}, created_at: '2026-01-01T00:00:00Z' }
+    });
+    const VERIFIED = [{ id: 'f1', status: 'verified', factor_type: 'totp' }];
+    const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
+
+    async function tradeSetup(page, { session = fakeSession('aal2', VERIFIED), conns, bots = [], fn } = {}) {
+        const calls = { exchange: [], auth: 0, rest: [] };
+        const conn = conns || [{ id: 'c1', exchange: 'bybit', status: 'active', key_hint: 'ab12', can_trade: true, last_checked_at: null }];
+        await page.addInitScript(([key, s]) => {
+            window.WebSocket = class { close() {} };
+            if (s) localStorage.setItem(key, s);
+        }, [SB_KEY_NAME, session ? JSON.stringify(session) : null]);
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.route('**/fapi/v1/**', r => r.abort());
+        await page.route('**/krmnaypaitruhqgaxkfw.supabase.co/**', async route => {
+            const req = route.request(), url = new URL(req.url());
+            const json = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: CORS, body: JSON.stringify(body) });
+            if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS });
+            if (url.pathname.startsWith('/auth/')) { calls.auth++; return json(400, { error: 'unexpected auth call' }); }
+            if (url.pathname.startsWith('/rest/v1/exchange_connections')) { calls.rest.push('exchange_connections'); return json(200, conn); }
+            if (url.pathname.startsWith('/rest/v1/bots')) { calls.rest.push('bots'); return json(200, bots); }
+            if (url.pathname === '/functions/v1/exchange') {
+                const body = JSON.parse(req.postData() || '{}');
+                calls.exchange.push(body);
+                const r = (fn && fn(body)) || { status: 200, json: { ok: true, positions: [], canTrade: true, wallet: 1000, available: 900, unrealized: 5 } };
+                return json(r.status, r.json);
+            }
+            return json(404, {});
+        });
+        await page.goto(PAGE + '#trade'); await page.waitForTimeout(700);
+        return calls;
+    }
+    const acceptDialogs = (page, store) => page.on('dialog', d => { store.push(d.message()); d.accept(); });
+
+    await run('trade: without a session nothing is sent to the exchange function and there is no order form', async page => {
+        const calls = await tradeSetup(page, { session: null });
+        assert.match(await page.textContent('#trBody'), /Увійдіть в Orbix/);
+        assert.equal(await page.locator('#trBuy').count(), 0);
+        assert.equal(calls.exchange.length, 0);
+        assert.equal(calls.auth, 0);
+    }, browser);
+
+    await run('trade: a seeded Orbix session unlocks the panel, is never cleared and causes no auth or exchange requests', async page => {
+        const calls = await tradeSetup(page);
+        assert.ok((await page.locator('#trBuy').count()) > 0);
+        assert.equal(calls.exchange.length, 0);                                           // жодних автоматичних звернень до біржі
+        assert.equal(calls.auth, 0);
+        const kept = await page.evaluate(k => JSON.parse(localStorage.getItem(k)), SB_KEY_NAME);
+        assert.equal(kept.refresh_token, 'r');
+        assert.match(await page.textContent('#trBody'), /2FA: підтверджено/);
+    }, browser);
+
+    await run('trade: without 2FA the panel is read-only and explains how to enable it in Orbix', async page => {
+        const calls = await tradeSetup(page, { session: fakeSession('aal1', []) });
+        assert.match(await page.textContent('#trBody'), /Увімкніть двофакторний вхід в Orbix/);
+        assert.equal(await page.locator('#trBuy').count(), 0);
+        assert.equal(calls.exchange.length, 0);
+    }, browser);
+
+    await run('trade: 2FA enrolled but not confirmed asks for the code in Orbix', async page => {
+        await tradeSetup(page, { session: fakeSession('aal1', VERIFIED) });
+        assert.match(await page.textContent('#trBody'), /кодом з Google Authenticator в Orbix/);
+        assert.equal(await page.locator('#trBuy').count(), 0);
+    }, browser);
+
+    await run('trade: keys are never entered here (no key fields) and the Orbix link is offered', async page => {
+        await tradeSetup(page, { conns: [] });
+        assert.match(await page.textContent('#trBody'), /Додайте ключі біржі в Orbix/);
+        assert.equal(await page.locator('input[type="password"]').count(), 0);
+        assert.equal(await page.locator('#trBody input[placeholder*="Key" i]').count(), 0);
+        assert.equal(await page.getAttribute('#trBody a', 'href'), 'https://koloss10.github.io/Orbix/');
+    }, browser);
+
+    await run('trade: a pair with an Orbix server bot is blocked for orders and for closing', async page => {
+        const seen = [];
+        const calls = await tradeSetup(page, {
+            bots: [{ id: 'b1', name: 'BTC bot', symbol: 'BTC/USDT', status: 'running', config: { _srv: true, _tn: true, _ex: 'bybit' } }],
+            fn: b => (b.action === 'positions' ? { status: 200, json: { ok: true, positions: [{ symbol: 'BTCUSDT', amt: 0.1, entry: 60000, mark: 60100, pnl: 10, lev: 3 }] } } : null)
+        });
+        acceptDialogs(page, seen);
+        await page.fill('#trSym', 'BTCUSDT');
+        await page.click('#trBuy');
+        assert.match(await page.textContent('#trMsg'), /працює бот Orbix/);
+        assert.equal(seen.length, 0);                                                     // підтвердження навіть не показували
+        await page.click('[data-act="positions"]'); await page.waitForTimeout(300);
+        assert.match(await page.textContent('#trBody'), /\(бот Orbix, заблоковано\)/);
+        assert.equal(await page.locator('[data-act="close"]').count(), 0);                           // кнопки «Закрити» для ботової пари немає
+        assert.equal(calls.exchange.filter(b => b.action === 'order' || b.action === 'close').length, 0);
+    }, browser);
+
+    await run('trade: an order sends the exact body once, shows the confirmation text and is NOT retried on failure', async page => {
+        const seen = [];
+        const calls = await tradeSetup(page, {
+            fn: b => (b.action === 'order' ? { status: 502, json: { error: 'ab not enough', code: 110007 } } : null)
+        });
+        acceptDialogs(page, seen);
+        await page.fill('#trSym', 'ethusdt'); await page.fill('#trNotional', '150'); await page.fill('#trLev', '5');
+        await page.click('#trBuy'); await page.waitForTimeout(500);
+        const orders = calls.exchange.filter(b => b.action === 'order');
+        assert.equal(orders.length, 1);                                                   // жодних автоповторів
+        assert.deepEqual(orders[0], { exchange: 'bybit', action: 'order', symbol: 'ETHUSDT', side: 'BUY', notional: 150, leverage: 5 });
+        assert.match(seen[0], /Bybit Demo/i); assert.match(seen[0], /БЕЗ СТОПА/);
+        assert.match(await page.textContent('#trMsg'), /Недостатньо коштів на демо-рахунку/);
+        assert.equal(calls.exchange.filter(b => b.action === 'positions').length, 1);     // після помилки показуємо справжні позиції
+    }, browser);
+
+    await run('trade: cancelling the confirmation sends nothing', async page => {
+        const calls = await tradeSetup(page);
+        page.on('dialog', d => d.dismiss());
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trSell'); await page.waitForTimeout(300);
+        assert.equal(calls.exchange.length, 0);
+        assert.match(await page.textContent('#trMsg'), /Скасовано/);
+    }, browser);
+
+    await run('trade: invalid input is rejected before anything is sent (size above the client cap)', async page => {
+        const calls = await tradeSetup(page);
+        page.on('dialog', d => d.accept());
+        await page.fill('#trSym', 'ETHUSDT'); await page.fill('#trNotional', '99999');
+        await page.click('#trBuy'); await page.waitForTimeout(200);
+        assert.match(await page.textContent('#trMsg'), /Сума ордера/);
+        assert.equal(calls.exchange.length, 0);
+    }, browser);
+
+    await run('trade: success shows the server fill and refreshes positions; Bybit is the default exchange', async page => {
+        const calls = await tradeSetup(page, {
+            fn: b => (b.action === 'order' ? { status: 200, json: { ok: true, order: { symbol: 'ETHUSDT', side: 'BUY', qty: 0.08, price: 1712.3456, approx: false } } }
+                : b.action === 'positions' ? { status: 200, json: { ok: true, positions: [{ symbol: 'ETHUSDT', amt: 0.08, entry: 1712.3, mark: 1713, pnl: 0.05, lev: 3 }] } } : null)
+        });
+        page.on('dialog', d => d.accept());
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(500);
+        assert.match(await page.textContent('#trMsg'), /Виконано: купівля 0\.08 ETHUSDT за 1712\.3456/);
+        assert.match(await page.textContent('#trBody'), /Закрити/);
+        assert.ok(calls.exchange.every(b => b.exchange === 'bybit'));
+    }, browser);
+
+    await run('trade: 403 «mfa required» from the server shows the Orbix instruction', async page => {
+        await tradeSetup(page, { fn: () => ({ status: 403, json: { error: 'mfa required' } }) });
+        await page.click('[data-act="positions"]'); await page.waitForTimeout(300);
+        assert.match(await page.textContent('#trMsg'), /Google Authenticator в Orbix/);
+    }, browser);
+
+    await run('trade: strings from the server are escaped (positions and error text)', async page => {
+        await tradeSetup(page, {
+            fn: b => (b.action === 'positions'
+                ? { status: 200, json: { ok: true, positions: [{ symbol: '<img src=x onerror="window.__xss=1">', amt: 1, entry: 1, mark: 1, pnl: 0, lev: 1 }] } }
+                : { status: 502, json: { error: '<b id="pwn">boom</b>' } })
+        });
+        await page.click('[data-act="positions"]'); await page.waitForTimeout(300);
+        assert.equal(await page.evaluate(() => window.__xss), undefined);
+        assert.match(await page.textContent('#trBody'), /<img src=x/);                   // видно як текст
+        await page.click('[data-act="check"]'); await page.waitForTimeout(300);
+        assert.equal(await page.locator('#pwn').count(), 0);
+        assert.match(await page.textContent('#trMsg'), /<b id="pwn">boom<\/b>/);
+    }, browser);
+
+    await run('trade: the 🛒 button on a formation only prefills the pair and never sends an order', async page => {
+        const calls = await tradeSetup(page);
+        await page.evaluate(() => window.openTrade({ symbol: 'SOLUSDT', side: 'short' }));
+        await page.waitForTimeout(500);
+        assert.equal(await page.inputValue('#trSym'), 'SOLUSDT');
+        assert.match(await page.textContent('#trBody'), /Сигнал: SOLUSDT SHORT/);
+        assert.equal(calls.exchange.length, 0);
+    }, browser);
+
+    await run('TradingView script is not loaded with the page, only on demand', async page => {
+        const asked = [];
+        page.on('request', r => { if (r.url().includes('tradingview.com')) asked.push(r.url()); });
+        await page.route('**/s3.tradingview.com/**', r => r.abort());
+        await page.route('**/api/v3/**', r => r.abort());
+        await page.route('**/fapi/v1/**', r => r.abort());
+        await page.goto(PAGE); await page.waitForTimeout(600);
+        assert.equal(asked.length, 0);
+        await page.evaluate(() => window.switchChartEngine('tv')); await page.waitForTimeout(300);
+        assert.ok(asked.length >= 1);
+    }, browser);
+
     // «Скачати .html» -> автономний файл має відкриватись без помилок (потрібен http, не file://)
     const server = http.createServer((req, res) => {
         const f = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url.split('?')[0]);
@@ -466,7 +652,9 @@ async function run(name, fn, browser) {
         await bundle.goto('file://' + out); await bundle.waitForTimeout(1200);
         assert.deepEqual(errs, []);
         assert.ok(await bundle.evaluate(() => app.candles.length) > 0);
-        assert.equal(await bundle.evaluate(() => document.querySelectorAll('script[src]').length), 1); // лише tv.js
+        const srcs = await bundle.evaluate(() => [...document.querySelectorAll('script[src]')].map(s => s.src.slice(0, 5)));
+        assert.deepEqual(srcs, ['data:']);                                   // лише вбудована бібліотека входу; зовнішніх скриптів немає
+        assert.equal(await bundle.evaluate(() => typeof window.supabase.createClient), 'function');
         await bundle.close();
         fs.unlinkSync(out);
     }, browser);

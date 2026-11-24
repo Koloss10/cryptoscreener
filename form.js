@@ -94,8 +94,8 @@
         document.getElementById('fmBody').innerHTML = list.length
             ? list.map(s => `<tr data-sym="${esc(s.symbol)}" tabindex="0"><td>${esc(fmtTime(s.time))}</td><td>${esc(s.symbol.replace(/USDT$/, ''))}<span class="lv-mu"> /USDT</span></td>`
                 + `<td>${esc(TYPE_NAMES[s.type])}</td><td class="${s.side === 'long' ? 'lv-up' : 'lv-dn'}">${s.side === 'long' ? 'LONG ▲' : 'SHORT ▼'}</td>`
-                + `<td>$${esc(window.fmt(s.entry))}</td><td class="lv-dn">$${esc(window.fmt(s.stop))}</td><td class="lv-up">$${esc(window.fmt(s.take))}</td><td>${statusCell(s)}</td></tr>`).join('')
-            : `<tr><td colspan="8" class="lv-empty">${state.signals.length ? 'Немає сигналів за цими фільтрами.' : 'Поки що формацій не знайдено. Детектор працює, поки відкрита сторінка: перший сигнал зʼявиться, коли закриється відповідна свічка.'}</td></tr>`;
+                + `<td>$${esc(window.fmt(s.entry))}</td><td class="lv-dn">$${esc(window.fmt(s.stop))}</td><td class="lv-up">$${esc(window.fmt(s.take))}</td><td>${statusCell(s)}</td><td><button type="button" class="lv-btn" data-trade="${esc(s.symbol)}" data-side="${s.side}" title="Відкрити торгову панель з цією парою (ордер не надсилається)">🛒</button></td></tr>`).join('')
+            : `<tr><td colspan="9" class="lv-empty">${state.signals.length ? 'Немає сигналів за цими фільтрами.' : 'Поки що формацій не знайдено. Детектор працює, поки відкрита сторінка: перший сигнал зʼявиться, коли закриється відповідна свічка.'}</td></tr>`;
         document.getElementById('fmCount').textContent = `${list.length} з ${state.signals.length} сигналів`;
     }
 
@@ -106,7 +106,12 @@
         open.addEventListener('change', () => { state.onlyOpen = open.checked; save(); render(); });
         sound.addEventListener('change', () => { state.sound = sound.checked; save(); if (state.sound && window.beep) window.beep(660); });
         const body = document.getElementById('fmBody');
-        body.addEventListener('click', e => { const tr = e.target.closest('tr[data-sym]'); if (tr) window.openFuturesChart(tr.dataset.sym); });
+        body.addEventListener('click', e => {
+            const t = e.target.closest('[data-trade]');
+            if (t) return window.openTrade({ symbol: t.dataset.trade, side: t.dataset.side });
+            const tr = e.target.closest('tr[data-sym]');
+            if (tr) window.openFuturesChart(tr.dataset.sym);
+        });
         body.addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-sym]'); if (tr) window.openFuturesChart(tr.dataset.sym); } });
         document.getElementById('fmClear').addEventListener('click', () => {
             if (!window.confirm('Видалити всю історію формацій і статистику?')) return;
