@@ -60,6 +60,7 @@
         <button id="nav-live" onclick="window.openTab('live',this)" class="t-btn gold-btn py-1.5 px-2 rounded-lg text-xs">📡 Скринер</button>
         <button id="nav-dens" onclick="window.openTab('dens',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🧱 Плотності</button>
         <button id="nav-form" onclick="window.openTab('form',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">🎯 Формації</button>
+        <button id="nav-cmp" onclick="window.openTab('cmp',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">⚖️ Порівняння</button>
         <button id="nav-trade" onclick="window.openTab('trade',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">💼 Торгівля</button>
         <button id="nav-terminal" onclick="window.openTab('terminal',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-slate-400">📈 Термінал</button>
         <button id="nav-velesbot" onclick="window.openTab('velesbot',this)" class="t-btn py-1.5 px-2 rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">🤖 Veles-Бот (симуляція)</button>
@@ -136,6 +137,21 @@
             </table>
         </div>
         <p class="lv-note">Детектор шукає сигнали на закритих 1-хвилинних свічках 40 монет зі «Скринера», поки ця сторінка відкрита; історія й статистика зберігаються лише в цьому браузері (до 500 сигналів). Результат — за наступними свічками, до 60 хв: якщо стоп і тейк у межах однієї свічки, рахується стоп; комісії й проковзування не враховані; «невідомо» — коли свічок для перевірки вже немає. «Відскок від плотності» працює лише коли відкрито «Плотності», «Формації» або «Термінал» (інакше стіни не оновлюються й ігноруються). Правила й пороги — мої власні, не Digash; вони не доведені як прибуткові. Це аналітика й навчальна статистика, а не рекомендація.</p>
+    </section>
+
+    <section id="view-cmp" class="tab-view hidden panel p-3.5">
+        <div class="lv-top"><h2>⚖️ Монета на всіх біржах</h2><span id="cmCount" class="lv-mu" style="font-size:12px"></span></div>
+        <form id="cmForm" class="lv-filters" autocomplete="off">
+            <label>Монета<input id="cmSym" list="cmSyms" placeholder="BTC, SOLUSDT…" spellcheck="false"></label>
+            <datalist id="cmSyms"></datalist>
+            <div class="lv-row" style="align-self:end;margin:0"><button type="submit" class="lv-btn lv-on">Показати</button></div>
+        </form>
+        <p id="cmMsg" class="lv-note lv-warn" role="status"></p>
+        <p id="cmSummary" class="lv-note" role="status"></p>
+        <div class="lv-wrap">
+            <table class="lv-table"><thead><tr><th>Біржа</th><th>Ціна</th><th>Від медіани</th><th>24г</th><th>Обсяг 24г</th><th>Відкр. інтерес</th><th>Фандинг</th><th>Стіна</th><th>Дані</th></tr></thead><tbody id="cmBody"></tbody></table>
+        </div>
+        <p class="lv-note">Binance — наживо, але лише для топ-40 за обсягом (тут немає відкритого інтересу й стін); решта — знімки раз на 5 хв, тож ціни знято в різний час (різниця до кількох хвилин), і «розкид» — лише орієнтир, а не арбітражна можливість: без комісій, глибини й швидкості. Застарілі знімки (понад 15 хв) показано, але в розкид не входять. Монети з множником (1000PEPE) на біржах називаються по-різному й тут не зіставляються. У MEXC «24г» — зміна від початку доби за UTC+8. Фандинг — за період біржі (зазвичай 8 год, але не в усіх монет). Це аналітика, а не рекомендація.</p>
     </section>
 
     <section id="view-trade" class="tab-view hidden panel p-3.5">
@@ -723,6 +739,7 @@
     <script src="metrics.js" defer></script>
     <script src="feed.js" defer></script>
     <script src="okx-source.js" defer></script>
+    <script src="compare-core.js" defer></script>
     <script src="density.js" defer></script>
     <script src="density-feed.js" defer></script>
     <script src="formations.js" defer></script>
@@ -731,6 +748,7 @@
     <script src="trade-core.js" defer></script>
     <script src="live.js" defer></script>
     <script src="dens.js" defer></script>
+    <script src="compare.js" defer></script>
     <script src="form.js" defer></script>
     <script src="trade.js" defer></script>
 </body>

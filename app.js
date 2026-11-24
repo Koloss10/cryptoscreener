@@ -1039,6 +1039,8 @@
             if (id === 'dens' && window.renderDens) window.renderDens();
             if (id === 'form' && window.renderForm) window.renderForm();
             if (id === 'trade' && window.renderTrade) window.renderTrade();
+            if (id === 'cmp' && window.renderCompare) window.renderCompare();
+            if (id !== 'cmp' && window.leaveCompare) window.leaveCompare();
             if (id === 'terminal') setTimeout(window.drawChart, 50);
             if (id === 'velesbot') window.updateBotGridPreview();
             if (id === 'screener') window.scanTop20();

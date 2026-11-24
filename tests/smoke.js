@@ -913,6 +913,89 @@ async function run(name, fn, browser) {
         assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 3);
     }, browser);
 
+    // --- вкладка «Порівняння»: Binance наживо (підроблений потік) + знімки чотирьох бірж (підроблені) ---
+    const cmpSnap = (ex, price, { ageMs = 60000, extra = [] } = {}) => ({
+        ts: Date.now() - ageMs, ex,
+        coins: [
+            { s: 'BTCUSDT', last: price, chg24h: 1.5, volUsd: 5e9, oiUsd: 1e9, fund: ex === 'gate' ? -0.0002 : 0.0001 },
+            { s: 'SOLUSDT', last: 150, chg24h: 2, volUsd: 1e9, oiUsd: 1e8, fund: 0.0001 },
+            ...extra
+        ],
+        walls: { BTCUSDT: { mid: price, bids: [], asks: [{ px: price * 1.001, usd: 750000, dist: 0.1 }] } }
+    });
+    async function cmpSetup(page, { snaps = {}, failEx = [] } = {}) {
+        const hits = { n: 0, by: {} };
+        await liveSetup(page);
+        const prices = { okx: 100.5, bitget: 99.5, gate: 100.2, mexc: 100.0 };
+        await page.route('**/raw.githubusercontent.com/**', route => {
+            const ex = (new URL(route.request().url()).pathname.match(/\/data\/([a-z]+)\/latest\.json$/) || [])[1];
+            hits.n++; hits.by[ex] = (hits.by[ex] || 0) + 1;
+            const body = snaps[ex] || cmpSnap(ex, prices[ex]);
+            const status = failEx.includes(ex) ? 404 : 200;
+            return route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+        });
+        await page.evaluate(() => window.openTab('cmp', document.getElementById('nav-cmp')));
+        await page.waitForTimeout(700);
+        return hits;
+    }
+    const cmpRow = (page, ex) => page.$eval(`#cmBody tr[data-ex="${ex}"]`, tr => tr.textContent.replace(/\s+/g, ' '));
+
+    await run('compare: one coin on five exchanges, deviations from the median, spread and funding spread', async page => {
+        await cmpSetup(page);
+        assert.equal(await page.locator('#cmBody tr').count(), 5);
+        assert.match(await cmpRow(page, 'okx'), /\$100\.5/);
+        assert.match(await cmpRow(page, 'bitget'), /\$99\.5/);
+        assert.match(await cmpRow(page, 'bitget'), /-0\.\d\d%/);                         // нижче медіани
+        assert.match(await cmpRow(page, 'okx'), /\+0\.\d\d%/);                           // вище медіани
+        assert.match(await cmpRow(page, 'gate'), /-0\.0200%/);                           // фандинг Gate
+        assert.match(await cmpRow(page, 'okx'), /\$750K|\$750\.0K|750/);                  // стіна
+        assert.match(await page.textContent('#cmSummary'), /Розкид цін/);
+        assert.match(await page.textContent('#cmSummary'), /Різниця фандингу/);
+        assert.match(await cmpRow(page, 'binance'), /наживо/);
+        assert.equal(await page.textContent('#cmCount'), '5 з 5 бірж зі свіжими даними');
+    }, browser);
+
+    await run('compare: another coin by short name; a coin outside Binance top-40 or missing on an exchange is explained', async page => {
+        await cmpSetup(page, { snaps: { mexc: cmpSnap('mexc', 100, { extra: [] }) } });
+        await page.fill('#cmSym', 'sol');
+        await page.click('#cmForm button[type="submit"]'); await page.waitForTimeout(200);
+        assert.equal(await page.inputValue('#cmSym'), 'SOLUSDT');
+        assert.match(await cmpRow(page, 'binance'), /немає серед топ-40/);
+        assert.match(await cmpRow(page, 'okx'), /\$150/);
+        await page.fill('#cmSym', 'NOPEUSDT');
+        await page.click('#cmForm button[type="submit"]'); await page.waitForTimeout(200);
+        assert.match(await cmpRow(page, 'okx'), /монети немає на цій біржі/);
+        assert.match(await page.textContent('#cmSummary'), /хоча б із двох бірж/);
+    }, browser);
+
+    await run('compare: a stale snapshot is shown with its age but is left out of the median and the spread', async page => {
+        await cmpSetup(page, { snaps: { gate: cmpSnap('gate', 120, { ageMs: 40 * 60000 }) } });
+        const gate = await cmpRow(page, 'gate');
+        assert.match(gate, /застарілі/);
+        assert.match(gate, /\$120/);
+        assert.doesNotMatch(await page.textContent('#cmSummary'), /GATE/i);                  // 120 не потрапило ні в розкид, ні в різницю фандингу
+        assert.equal(await page.textContent('#cmCount'), '4 з 5 бірж зі свіжими даними');
+    }, browser);
+
+    await run('compare: an exchange whose file cannot be loaded shows its error while the others still work', async page => {
+        await cmpSetup(page, { failEx: ['mexc'] });
+        assert.match(await cmpRow(page, 'mexc'), /HTTP 404/);
+        assert.match(await cmpRow(page, 'okx'), /\$100\.5/);
+        assert.equal(await page.textContent('#cmCount'), '4 з 5 бірж зі свіжими даними');
+    }, browser);
+
+    await run('compare: the chosen coin is remembered and nothing is requested until the tab is opened', async page => {
+        await liveSetup(page);
+        let n = 0;
+        await page.route('**/raw.githubusercontent.com/**', route => { n++; return route.fulfill({ status: 404, body: '' }); });
+        await page.waitForTimeout(400);
+        assert.equal(n, 0);
+        await page.evaluate(() => window.openTab('cmp', document.getElementById('nav-cmp')));
+        await page.fill('#cmSym', 'eth'); await page.click('#cmForm button[type="submit"]');
+        await page.reload(); await page.waitForTimeout(500);
+        assert.equal(await page.inputValue('#cmSym'), 'ETHUSDT');
+    }, browser);
+
     await run('TradingView script is not loaded with the page, only on demand', async page => {
         const asked = [];
         page.on('request', r => { if (r.url().includes('tradingview.com')) asked.push(r.url()); });
