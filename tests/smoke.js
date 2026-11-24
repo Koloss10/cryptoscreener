@@ -896,6 +896,7 @@ async function run(name, fn, browser) {
             assert.equal(await page.locator('#lvBody tr[data-sym]').count(), 3, ex);
             assert.match(await page.textContent('#lvTitle'), new RegExp(ex, 'i'));
             assert.equal(await page.textContent('#lvStatus'), 'Наживо');
+            assert.equal(/UTC\+8/.test(await page.textContent('#lvNote')), ex === 'mexc', ex);      // попередження лише для MEXC
         }
         assert.equal(hits.by.okx, undefined);                                   // OKX не чіпали
         await page.waitForTimeout(200);
