@@ -1,0 +1,40 @@
+name: Collect market data
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write          # лише запис у гілку data; секретів не використовується
+concurrency:
+  group: collect
+  cancel-in-progress: false
+jobs:
+  okx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect OKX public data (no account or key)
+        run: node collector/okx.mjs > "$RUNNER_TEMP/okx.json"
+      - name: Publish to the data branch (single commit, history is not kept)
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git fetch --depth 1 origin data
+            git worktree add --detach "$RUNNER_TEMP/data" FETCH_HEAD
+          else
+            git worktree add --detach "$RUNNER_TEMP/data"
+            git -C "$RUNNER_TEMP/data" rm -rfq . || true
+          fi
+          cd "$RUNNER_TEMP/data"
+          mkdir -p okx
+          cat "$RUNNER_TEMP/okx.json" >> "okx/$(date -u +%F).ndjson"
+          cp "$RUNNER_TEMP/okx.json" okx/latest.json
+          find okx -name '*.ndjson' -mtime +3 -delete
+          git checkout -q --orphan snap
+          git add -A
+          git -c user.name='collector' -c user.email='collector@users.noreply.github.com' commit -q -m "okx $(date -u +%FT%TZ)"
+          git push -q --force origin snap:data
