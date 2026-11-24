@@ -89,6 +89,13 @@
             <label>NATR 5m від, %<input id="lvMinNatr" type="number" min="0" step="0.1" inputmode="decimal"></label>
             <label>Сплеск обсягу від, ×<input id="lvMinSpike" type="number" min="0" step="0.5" inputmode="decimal"></label>
         </div>
+        <div class="lv-filters" id="lvRuleForm" role="group" aria-label="Нове правило підсвітки">
+            <label>Підсвітити колонку<select id="lvRuleCol"></select></label>
+            <label>Умова<select id="lvRuleOp"><option value="&gt;=">не менше (≥)</option><option value="&lt;=">не більше (≤)</option></select></label>
+            <label>Значення<input id="lvRuleVal" type="number" step="any" inputmode="decimal"></label>
+            <div class="lv-row" style="align-self:end;margin:0"><button type="button" id="lvRuleAdd" class="lv-btn lv-on">Додати правило</button></div>
+        </div>
+        <div class="lv-row" id="lvRuleList" aria-label="Правила підсвітки"></div>
         <p id="lvDetail" class="lv-note lv-warn" role="status" hidden></p>
         <div class="lv-wrap">
             <table class="lv-table"><thead id="lvHead"></thead><tbody id="lvBody"></tbody></table>

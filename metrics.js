@@ -122,7 +122,26 @@
         return { time: k.t, open: +k.o, high: +k.h, low: +k.l, close: +k.c, vol: +k.v, quote: +k.q };
     }
 
-    const api = { aggregate, natr, pctChange, quoteVolume, volumeSpike, buildRow, filterRows, sortRows, applyKline, parseKline };
+    // Правила підсвітки: { key, op: '>=' | '<=', value } у «сирих» одиницях колонки. Невалідні відкидаємо, дублі прибираємо.
+    const RULE_OPS = { '>=': (v, x) => v >= x, '<=': (v, x) => v <= x };
+    const MAX_RULES = 12;
+    function normalizeRules(list, validKeys) {
+        if (!Array.isArray(list)) return [];
+        const seen = new Set(), out = [];
+        for (const r of list) {
+            if (!r || typeof r.key !== 'string' || !validKeys.includes(r.key) || !RULE_OPS[r.op]) continue;
+            const value = Number(r.value);
+            if (!Number.isFinite(value)) continue;
+            const id = r.key + r.op + value;
+            if (seen.has(id)) continue;
+            seen.add(id); out.push({ key: r.key, op: r.op, value });
+            if (out.length >= MAX_RULES) break;
+        }
+        return out;
+    }
+    const ruleHit = (rules, key, v) => typeof v === 'number' && Number.isFinite(v) && rules.some(r => r.key === key && RULE_OPS[r.op](v, r.value));
+
+    const api = { MAX_RULES, normalizeRules, ruleHit, aggregate, natr, pctChange, quoteVolume, volumeSpike, buildRow, filterRows, sortRows, applyKline, parseKline };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.Metrics = api;
 })(typeof window !== 'undefined' ? window : globalThis);

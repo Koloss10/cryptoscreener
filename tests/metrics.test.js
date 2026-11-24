@@ -114,3 +114,27 @@ test('parseKline converts a Binance futures kline event to a candle', () => {
     const msg = { k: { t: 60000, o: '1', h: '2', l: '0.5', c: '1.5', v: '10', q: '15' } };
     assert.deepEqual(M.parseKline(msg), { time: 60000, open: 1, high: 2, low: 0.5, close: 1.5, vol: 10, quote: 15 });
 });
+
+test('normalizeRules keeps only valid unique rules (known column, >= or <=, finite number) up to the cap', () => {
+    const keys = ['natr5', 'vol24'];
+    const rules = M.normalizeRules([
+        { key: 'natr5', op: '>=', value: '2' }, { key: 'natr5', op: '>=', value: 2 },          // дубль
+        { key: 'nope', op: '>=', value: 1 }, { key: 'vol24', op: '==', value: 1 },              // невідома колонка, невідома умова
+        { key: 'vol24', op: '<=', value: 'abc' }, null, { key: 'vol24', op: '<=', value: -5 }
+    ], keys);
+    assert.deepEqual(rules, [{ key: 'natr5', op: '>=', value: 2 }, { key: 'vol24', op: '<=', value: -5 }]);
+    assert.deepEqual(M.normalizeRules('x', keys), []);
+    const many = Array.from({ length: 30 }, (_, i) => ({ key: 'natr5', op: '>=', value: i }));
+    assert.equal(M.normalizeRules(many, keys).length, M.MAX_RULES);
+});
+
+test('ruleHit applies rules only to their own column and never to missing values', () => {
+    const rules = [{ key: 'natr5', op: '>=', value: 2 }, { key: 'chg24', op: '<=', value: -5 }];
+    assert.equal(M.ruleHit(rules, 'natr5', 2), true);
+    assert.equal(M.ruleHit(rules, 'natr5', 1.99), false);
+    assert.equal(M.ruleHit(rules, 'chg24', -5.1), true);
+    assert.equal(M.ruleHit(rules, 'chg24', 3), false);
+    assert.equal(M.ruleHit(rules, 'spike', 100), false);
+    assert.equal(M.ruleHit(rules, 'natr5', null), false);
+    assert.equal(M.ruleHit(rules, 'natr5', NaN), false);
+});

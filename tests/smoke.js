@@ -1013,6 +1013,62 @@ async function run(name, fn, browser) {
         assert.equal(await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]').content.includes("object-src 'none'")), true);
     }, browser);
 
+    // --- правила підсвітки колонок ---
+    const savedLive = page => page.evaluate(() => JSON.parse(localStorage.getItem('cs_live_v1') || 'null'));
+    const addRuleUi = async (page, col, op, val) => {
+        await page.selectOption('#lvRuleCol', col); await page.selectOption('#lvRuleOp', op);
+        await page.fill('#lvRuleVal', String(val)); await page.click('#lvRuleAdd');
+    };
+
+    await run('highlight rules: defaults are shown, a new rule highlights its column, converts units and is saved', async page => {
+        await liveSetup(page);
+        assert.equal(await page.locator('#lvRuleList [data-rm]').count(), 2);                        // NATR і сплеск за замовчуванням
+        assert.match(await page.textContent('#lvRuleList'), /NATR 5m ≥ 2 %/);
+        assert.equal(await page.locator('#lvBody tr[data-sym="BTCUSDT"] td:nth-child(3) .lv-hot').count(), 0);
+        await addRuleUi(page, 'chg24', '>=', 1);                                                     // у всіх монет 24г = +1.5%
+        assert.equal(await page.locator('#lvBody tr[data-sym="BTCUSDT"] td:nth-child(3) .lv-hot').count(), 1);
+        await addRuleUi(page, 'vol24', '>=', 5);                                                     // 5 млн $ → 5e6
+        await addRuleUi(page, 'funding', '<=', -0.05);                                               // −0.05% → −0.0005
+        const rules = (await savedLive(page)).rules;
+        assert.deepEqual(rules.slice(2), [{ key: 'chg24', op: '>=', value: 1 }, { key: 'vol24', op: '>=', value: 5e6 }, { key: 'funding', op: '<=', value: -0.0005 }]);
+        assert.match(await page.textContent('#lvRuleList'), /Фандинг ≤ -0\.05 %/);
+        await page.reload(); await page.waitForTimeout(600);
+        assert.equal(await page.locator('#lvRuleList [data-rm]').count(), 5);                        // правила пережили перезавантаження
+    }, browser);
+
+    await run('highlight rules: removing a rule removes the highlight; removing all leaves a message', async page => {
+        await liveSetup(page);
+        await addRuleUi(page, 'chg24', '>=', 1);
+        assert.equal(await page.locator('#lvBody .lv-hot').count() > 0, true);
+        for (let i = 0; i < 3; i++) await page.click('#lvRuleList [data-rm]');
+        assert.equal(await page.locator('#lvRuleList [data-rm]').count(), 0);
+        assert.equal(await page.locator('#lvBody .lv-hot').count(), 0);
+        assert.match(await page.textContent('#lvRuleList'), /Правил підсвітки немає/);
+        assert.deepEqual((await savedLive(page)).rules, []);
+    }, browser);
+
+    await run('highlight rules: empty input and duplicates add nothing', async page => {
+        await liveSetup(page);
+        await page.selectOption('#lvRuleCol', 'chg24'); await page.click('#lvRuleAdd');             // порожнє значення
+        assert.equal(await page.locator('#lvRuleList [data-rm]').count(), 2);
+        await addRuleUi(page, 'natr5', '>=', 2);                                                     // вже є за замовчуванням
+        assert.equal(await page.locator('#lvRuleList [data-rm]').count(), 2);
+    }, browser);
+
+    await run('highlight rules: the column list and the chips follow the source (no NATR for exchange snapshots)', async page => {
+        await okxSetup(page);
+        assert.ok(await page.locator('#lvRuleCol option[value="natr5"]').count() > 0);
+        await page.click('#lvSource [data-src="okx"]'); await page.waitForTimeout(400);
+        assert.equal(await page.locator('#lvRuleCol option[value="natr5"]').count(), 0);
+        assert.equal(await page.locator('#lvRuleCol option[value="oi"]').count(), 1);
+        assert.match(await page.textContent('#lvRuleList'), /Правил підсвітки немає/);               // правила NATR/сплеску тут не діють
+        await addRuleUi(page, 'oi', '>=', 1000);                                                     // ≥ 1000 млн $: BTC (1.8 млрд)
+        assert.equal(await page.locator('#lvBody tr[data-sym="BTCUSDT"] .lv-hot').count(), 1);
+        assert.equal(await page.locator('#lvBody tr[data-sym="SOLUSDT"] .lv-hot').count(), 0);
+        await page.click('#lvSource [data-src="binance"]'); await page.waitForTimeout(300);
+        assert.match(await page.textContent('#lvRuleList'), /NATR 5m/);                              // збережені правила повернулись
+    }, browser);
+
     await run('TradingView script is not loaded with the page, only on demand', async page => {
         const asked = [];
         page.on('request', r => { if (r.url().includes('tradingview.com')) asked.push(r.url()); });
