@@ -758,6 +758,37 @@ async function run(name, fn, browser) {
         assert.equal(calls.exchange.filter(b => b.action === 'order').length, 1);
     }, browser);
 
+    await run('trade: a 200 reply that carries an error is shown as an error, not as a fill', async page => {
+        await tradeSetup(page, { fn: b => (b.action === 'order' ? { status: 200, json: { error: 'order too small: min 5.00 USDT' } } : null) });
+        page.on('dialog', d => d.accept());
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(400);
+        assert.doesNotMatch(await msg(page), /Виконано/);
+        assert.match(await msg(page), /мінімум 5\.00 USDT/);
+    }, browser);
+
+    await run('trade: after a refusal the exchange is asked by link; if it shows the order the user is told so', async page => {
+        const calls = await tradeSetup(page, {
+            fn: b => (b.action === 'order' ? { status: 502, json: { error: 'exchange request failed' } }
+                : b.action === 'status' ? { status: 200, json: { ok: true, order: { symbol: 'ETHUSDT', side: 'BUY', qty: 0.08, price: 1712.3 } } } : null)
+        });
+        page.on('dialog', d => d.accept());
+        await page.fill('#trSym', 'ETHUSDT');
+        await page.click('#trBuy'); await page.waitForTimeout(500);
+        assert.match(await msg(page), /біржа показує ордер/);
+        assert.equal(calls.exchange.filter(b => b.action === 'order').length, 1);
+    }, browser);
+
+    await run('trade: the 2FA secret is not kept in state and the QR is cleared after verification', async page => {
+        await tradeSetup(page, { session: fakeSession('aal1', []), conns: [] });
+        await page.click('#trMfaStart'); await page.waitForTimeout(400);
+        assert.equal((await page.evaluate(() => JSON.stringify(window.tradeState))).includes('JBSWY3DPEHPK3PXP'), false);
+        await page.fill('#trTotp', '123456');
+        await page.click('#trMfaForm button[type="submit"]'); await page.waitForTimeout(500);
+        assert.equal(await page.textContent('#trSecretTxt'), '');
+        assert.equal(await page.getAttribute('#trQr', 'src'), null);
+    }, browser);
+
     await run('trade: the function\'s own JSON error is a definite refusal', async page => {
         await tradeSetup(page, { fn: b => (b.action === 'order' ? { status: 502, json: { error: 'order too small: min 5.00 USDT' } } : null) });
         page.on('dialog', d => d.accept());

@@ -84,7 +84,10 @@
         for (const f of (list.data && list.data.all) || []) if (f.factor_type === 'totp' && f.status !== 'verified') await sb.auth.mfa.unenroll({ factorId: f.id });
         const r = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'CryptoScreener ' + new Date().toISOString().slice(0, 16) });
         if (r.error) throw r.error;
-        state.mfa = { qr: r.data.totp.qr_code, secret: r.data.totp.secret }; state.factorId = r.data.id;
+        const qr = String(r.data.totp.qr_code || '');
+        $('trQr').src = /^data:image\/svg\+xml/.test(qr) ? qr : '';       // секрет живе лише в DOM, не в стані
+        $('trSecretTxt').textContent = r.data.totp.secret || '';
+        state.mfa = true; state.factorId = r.data.id;
         state.authMsg = 'Скануйте QR-код у Google Authenticator (або введіть ключ вручну) і впишіть 6-значний код.';
     });
     const mfaVerify = () => authAction(async () => {
@@ -107,10 +110,10 @@
     const saveKeys = () => keysAction(async () => {
         const g = gate0(); if (!g.ok) throw new Error(g.reason);
         const key = $('trKey').value.trim(), secret = $('trSecret').value.trim();
+        $('trKey').value = ''; $('trSecret').value = '';                  // поля очищаємо одразу, до будь-яких запитів
         if (!key || !secret) throw new Error('Вставте обидва ключі: API Key і Secret.');
         state.msg = 'Зберігаю на сервері…'; render();
         const r = await client().rpc('ex_save', { p_key: key, p_secret: secret, p_exchange: state.ex });
-        $('trKey').value = ''; $('trSecret').value = '';                  // секрет у формі не лишається
         if (r.error) throw new Error(TC.mapError(r.error.message, null, state.ex));
         await refresh();
         const a = await call('check');
@@ -148,6 +151,7 @@
                 if (j && typeof j.error === 'string') throw Object.assign(new Error(TC.mapError(j.error, j.code === undefined ? null : j.code, state.ex)), { definite: true });
                 throw Object.assign(new Error('Сервер відповів без пояснення (' + (r.error.name || 'помилка') + ').'), { unknown: true });
             }
+            if (r.data && typeof r.data.error === 'string') throw Object.assign(new Error(TC.mapError(r.data.error, r.data.code === undefined ? null : r.data.code, state.ex)), { definite: true });
             return r.data;
         } finally { clearTimeout(timer); }
     }
@@ -196,9 +200,12 @@
                 // повторно НЕ надсилаємо: питаємо біржу за ідентифікатором ордера й показуємо справжні позиції
                 const f = await lookup(body);
                 if (f && f.order) state.msg = `Відповідь не дійшла, але біржа підтвердила: ордер виконано — ${fill(f.order)}. Стопу на біржі немає.`;
-                else if (f) state.msg = 'Відповідь не дійшла. Біржа поки не бачить цього ордера: найімовірніше, його не виконано. Звірте позиції нижче й повторіть запит через кілька секунд.';
+                else if (f) state.msg = 'Відповідь не дійшла. Біржа поки не бачить цього ордера, але запит міг ще виконуватись. Звірте позиції нижче й зачекайте щонайменше хвилину, перш ніж повторювати.';
                 else state.msg = 'Результат невідомий: ' + e.message + ' Ордер МІГ виконатись — перевірте позиції нижче.';
-            } else state.msg = 'Помилка: ' + e.message + ' Біржа ордер не виконала.';
+            } else {
+                const f = await lookup(body);
+                state.msg = f && f.order ? `Сервер повернув помилку, але біржа показує ордер — ${fill(f.order)}. Перевірте позиції нижче.` : 'Помилка: ' + e.message + ' Біржа ордер не виконала.';
+            }
             try { await loadPositions(); }
             catch (e2) { if (e.unknown) state.msg += ' Позиції теж не вдалося отримати: перевірте їх на біржі вручну.'; }
             return;
@@ -212,9 +219,13 @@
         if (TC.isBlocked(symbol, blocklist())) throw new Error(blockedMsg(symbol));
         if (!window.confirm(`${TC.EXCHANGES[state.ex].short.toUpperCase()}: закрити ВСЮ позицію ${symbol} за ринком?`)) { state.msg = 'Скасовано.'; return; }
         state.msg = 'Закриваю позицію…'; render();
-        const r = await call('close', { symbol });
-        state.msg = r.closed ? `Позицію закрито за ${n2(r.order && r.order.price, 4)}.` : 'Позиції за цією парою немає.';
-        await loadPositions();
+        try {
+            const r = await call('close', { symbol });
+            state.msg = r.closed ? `Позицію закрито за ${n2(r.order && r.order.price, 4)}.` : 'Позиції за цією парою немає.';
+        } catch (e) {
+            state.msg = (e.unknown ? 'Результат невідомий: ' : 'Помилка: ') + e.message + (e.unknown ? ' Закриття МОГЛО виконатись — перевірте позиції нижче.' : '');
+        }
+        try { await loadPositions(); } catch (e2) { state.msg += ' Позиції не вдалося оновити.'; }
     });
 
     function switchEx(ex) {
@@ -252,11 +263,7 @@
         $('trMfaStart').hidden = hasFactor || !!state.mfa;
         $('trMfaForm').hidden = !(hasFactor || state.mfa);
         $('trMfaEnroll').hidden = !state.mfa;
-        if (state.mfa) {
-            const qr = String(state.mfa.qr || '');
-            $('trQr').src = /^data:image\/svg\+xml/.test(qr) ? qr : '';
-            $('trSecretTxt').textContent = state.mfa.secret || '';
-        }
+        if (!state.mfa) { $('trQr').removeAttribute('src'); $('trSecretTxt').textContent = ''; }
         $('trAuthMsg').textContent = state.authMsg;
         $('trKeysTitle').textContent = TC.EXCHANGES[state.ex].name;
         document.querySelectorAll('#trLogin button, #trMfa button, #trKeys button, #trSignOut').forEach(b => { b.disabled = state.busy; });
@@ -284,7 +291,7 @@
                 + `<label>Сума, USDT (з плечем)<input id="trNotional" type="number" min="${TC.LIMITS.minNotional}" max="${TC.LIMITS.maxNotional}" step="10" inputmode="decimal" value="${esc(state.notional)}"></label>`
                 + `<label>Плече, ×<input id="trLev" type="number" min="1" max="${TC.LIMITS.maxLeverage}" step="1" inputmode="numeric" value="${esc(state.lev)}"></label></div>`
                 + `<div class="lv-row"><button type="button" class="lv-btn lv-buy" id="trBuy" data-act="buy">Купити (Long)</button><button type="button" class="lv-btn lv-sell" id="trSell" data-act="sell">Продати (Short)</button></div>`
-                + `<p class="lv-note">Ринковий ордер без стопа й тейку на біржі. Макс. сума ${TC.LIMITS.maxNotional} USDT, плече до ${TC.LIMITS.maxLeverage}×, не частіше одного ордера на 2 с (перевіряє сервер).</p>`;
+                + `<p class="lv-note">Ринковий ордер без стопа й тейку на біржі. Макс. сума ${TC.LIMITS.maxNotional} USDT, плече до ${TC.LIMITS.maxLeverage}×, не частіше одного ордера на 3 с (сервер додатково перевіряє 2 с).</p>`;
         }
         html += posTable();
         html += `<p class="lv-note" id="trMsg" role="status">${esc(state.msg)}</p>`;
@@ -334,7 +341,7 @@
         state.hint = opts && opts.symbol ? `${state.symbol} ${opts.side === 'short' ? 'SHORT' : 'LONG'}` : '';
         window.openTab('trade', document.getElementById('nav-trade'));
     };
-    window.renderTrade = function () { refresh(); };
+    window.renderTrade = function () { syncUi(); refresh(); };      // спершу синхронно (пара в полі = пара в стані), потім стан із сервера
     window.tradeState = state;          // для тестів і діагностики; токенів і секретів тут немає
 
     window.addEventListener('DOMContentLoaded', () => { bind(); syncUi(); });

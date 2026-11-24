@@ -112,3 +112,11 @@ test('describeOrder produces the confirmation text with exchange, side, pair, si
     const t = T.describeOrder({ exchange: 'bybit', symbol: 'BTCUSDT', side: 'BUY', notional: 150, leverage: 5 });
     for (const part of ['Bybit Demo', 'КУПИТИ', 'BTCUSDT', '150', '5×', 'без стопа']) assert.ok(t.toLowerCase().includes(part.toLowerCase()), part + ' in: ' + t);
 });
+
+test('normSymbol and the blocklist accept the common ways of writing a pair', () => {
+    for (const v of ['BTC', 'btc-usdt', 'BTC_USDT', 'BTCUSDT.P', 'BINANCE:BTCUSDT', 'BTC/USDT:USDT', ' BTCUSDT ']) assert.equal(T.normSymbol(v), 'BTCUSDT', v);
+    assert.equal(T.normSymbol('1MBABYDOGE'), 'BABYDOGEUSDT');
+    assert.equal(T.normSymbol('1000PEPE/USDT'), 'PEPEUSDT');
+    assert.equal(T.isBlocked('ETHUSDT', T.parseBlocklist('BTC, eth')), true);
+    assert.equal(T.isBlocked('SOLUSDT', T.parseBlocklist('BTC, eth')), false);
+});

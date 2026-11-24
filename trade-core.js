@@ -18,7 +18,16 @@
     const LINK = /^cs[0-9a-f]{20}$/;                // ідентифікатор ордера: за ним можна дізнатись долю ордера (action: status)
 
     // Пари Orbix (BTC/USDT, 1000PEPE/USDT) і символи біржі (BTCUSDT, 1000PEPEUSDT) приводимо до одного вигляду
-    const normSymbol = s => String(s || '').replace('/', '').toUpperCase().replace(/^1000+/, '');
+    // Приймає й BTCUSDT, BTC/USDT, BTC-USDT, BTC_USDT, BTCUSDT.P, BINANCE:BTCUSDT, BTC/USDT:USDT, BTC (= BTCUSDT)
+    function normSymbol(input) {
+        let s = String(input || '').toUpperCase().trim().replace(/\.P$/, '');
+        const parts = s.split(':');
+        s = parts.length > 1 && parts[parts.length - 1] === 'USDT' ? parts[parts.length - 2] : parts[parts.length - 1];
+        s = s.replace(/[^A-Z0-9]/g, '');
+        if (!s) return '';
+        if (!s.endsWith('USDT')) s += 'USDT';
+        return s.replace(/^(1000000|1000|1M)(?=.+USDT$)/, '');
+    }
 
     // Пари, якими користувач заборонив торгувати вручну (наприклад, де працює бот Orbix на тих самих демо-ключах).
     // Біржа веде одну позицію на пару, тож ручна угода зіллється з ботовою.
