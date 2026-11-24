@@ -1069,6 +1069,55 @@ async function run(name, fn, browser) {
         assert.match(await page.textContent('#lvRuleList'), /NATR 5m/);                              // збережені правила повернулись
     }, browser);
 
+    // --- гарячі клавіші терміналу ---
+    const termSetup = async page => {
+        await mockBinance(page);
+        await page.route('**/fapi/v1/**', r => r.abort());
+        await page.addInitScript(() => { window.WebSocket = class { close() {} }; });
+        await page.goto(PAGE + '#terminal'); await page.waitForTimeout(900);
+    };
+
+    await run('hotkeys: Space/ArrowDown and ArrowUp walk through the coin list, Alt+digit picks a timeframe, Shift+D toggles densities', async page => {
+        await termSetup(page);
+        await page.evaluate(() => document.activeElement && document.activeElement.blur());
+        const opts = await page.$$eval('#coinSelect option', o => o.map(x => x.value));
+        assert.ok(opts.length >= 3);
+        const cur = () => page.evaluate(() => app.sym);
+        const start = await cur();
+        const i0 = opts.indexOf(start);
+        await page.keyboard.press('Space');
+        assert.equal(await cur(), opts[(i0 + 1) % opts.length]);
+        assert.equal(await page.inputValue('#coinSelect'), opts[(i0 + 1) % opts.length]);
+        await page.keyboard.press('ArrowUp');
+        assert.equal(await cur(), start);
+        await page.keyboard.press('ArrowUp');
+        assert.equal(await cur(), opts[(i0 - 1 + opts.length) % opts.length]);                 // по колу
+        await page.keyboard.press('Alt+Digit3');
+        assert.equal(await page.evaluate(() => app.tf), '4h');
+        assert.match(await page.$eval('.tf-b:nth-of-type(3)', b => b.className), /gold-btn/);
+        await page.keyboard.press('Alt+Digit6');
+        assert.equal(await page.evaluate(() => app.tf), '1M');
+        const dens = await page.evaluate(() => app.layers.dens);
+        await page.keyboard.press('Shift+KeyD');
+        assert.equal(await page.evaluate(() => app.layers.dens), !dens);
+    }, browser);
+
+    await run('hotkeys: nothing happens outside the terminal, while typing, or with Ctrl; Space on a focused button just presses it', async page => {
+        await termSetup(page);
+        await page.evaluate(() => document.activeElement && document.activeElement.blur());
+        const sym0 = await page.evaluate(() => app.sym);
+        await page.keyboard.press('Control+ArrowDown');
+        assert.equal(await page.evaluate(() => app.sym), sym0);
+        await page.focus('.tf-b:nth-of-type(4)');                                               // 1D
+        await page.keyboard.press('Space');
+        assert.equal(await page.evaluate(() => app.tf), '1d');                                 // кнопка натиснулась…
+        assert.equal(await page.evaluate(() => app.sym), sym0);                                // …а монета не змінилась
+        await page.evaluate(() => window.openTab('live', document.getElementById('nav-live')));
+        await page.evaluate(() => document.activeElement && document.activeElement.blur());
+        await page.keyboard.press('ArrowDown'); await page.keyboard.press('Alt+Digit2');
+        assert.equal(await page.evaluate(() => [app.sym, app.tf].join()), sym0 + ',1d');         // термінал закритий — клавіші ігноруються
+    }, browser);
+
     await run('TradingView script is not loaded with the page, only on demand', async page => {
         const asked = [];
         page.on('request', r => { if (r.url().includes('tradingview.com')) asked.push(r.url()); });

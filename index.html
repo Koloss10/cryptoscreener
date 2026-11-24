@@ -218,6 +218,7 @@
     <main id="view-terminal" class="tab-view hidden space-y-2.5">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
             <div class="lg:col-span-8 space-y-2.5">
+                <p id="hotkeyHint" class="lv-note" style="margin:0 0 6px"><b>Клавіші:</b> Пробіл або ↓ — наступна монета, ↑ — попередня, Alt+1…6 — таймфрейм (15m…1M), Shift+D — плотності. Не працюють, поки курсор у полі введення.</p>
                 <div id="chartPanel" class="panel p-2.5 flex flex-col">
                     <div class="grid grid-cols-2 gap-1 bg-[#0b0e14] p-1 rounded-lg border border-slate-800 mb-2">
                         <button id="btnModeCanvas" onclick="window.switchChartEngine('canvas')" class="gold-btn py-1.5 rounded text-xs">⚡ Графік (MTF + SMC + Сітка Veles)</button>
@@ -766,6 +767,7 @@
     <script src="live.js" defer></script>
     <script src="dens.js" defer></script>
     <script src="compare.js" defer></script>
+    <script src="hotkeys.js" defer></script>
     <script src="form.js" defer></script>
     <script src="trade.js" defer></script>
 </body>
