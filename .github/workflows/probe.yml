@@ -6,12 +6,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Response shapes of public OKX endpoints (no account or key needed)
+      - name: Response shapes of public Bitget / Gate / MEXC endpoints (no account or key)
         run: |
-          show() { echo "== $1"; curl -s -m 15 "$2" | head -c "${3:-400}"; echo; }
-          show "tickers"      "https://www.okx.com/api/v5/market/tickers?instType=SWAP" 500
-          show "funding"      "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP" 500
-          show "open-interest all" "https://www.okx.com/api/v5/public/open-interest?instType=SWAP" 400
-          show "books (sz=400)" "https://www.okx.com/api/v5/market/books?instId=BTC-USDT-SWAP&sz=400" 300
-          show "instruments"  "https://www.okx.com/api/v5/public/instruments?instType=SWAP" 700
-          show "candles 1m"   "https://www.okx.com/api/v5/market/candles?instId=BTC-USDT-SWAP&bar=1m&limit=2" 300
+          show() { echo "== $1"; curl -s -m 15 "$2" | head -c "${3:-500}"; echo; }
+          show "bitget tickers"    "https://api.bitget.com/api/v2/mix/market/tickers?productType=USDT-FUTURES" 900
+          show "bitget contracts"  "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-FUTURES" 700
+          show "bitget merge-depth" "https://api.bitget.com/api/v2/mix/market/merge-depth?productType=USDT-FUTURES&symbol=BTCUSDT&limit=max" 500
+          show "bitget funding"    "https://api.bitget.com/api/v2/mix/market/current-fund-rate?productType=USDT-FUTURES&symbol=BTCUSDT" 300
+          show "gate tickers"      "https://api.gateio.ws/api/v4/futures/usdt/tickers" 900
+          show "gate contracts"    "https://api.gateio.ws/api/v4/futures/usdt/contracts?limit=1" 900
+          show "gate order_book"   "https://api.gateio.ws/api/v4/futures/usdt/order_book?contract=BTC_USDT&limit=50" 400
+          show "mexc ticker"       "https://contract.mexc.com/api/v1/contract/ticker" 900
+          show "mexc detail"       "https://contract.mexc.com/api/v1/contract/detail?symbol=BTC_USDT" 900
+          show "mexc depth"        "https://contract.mexc.com/api/v1/contract/depth/BTC_USDT?limit=200" 400
+          echo "== limit probes"
+          printf 'bitget depth limit=200: '; curl -s -m 15 "https://api.bitget.com/api/v2/mix/market/merge-depth?productType=USDT-FUTURES&symbol=BTCUSDT&limit=200" | head -c 120; echo
+          printf 'gate order_book limit=300: '; curl -s -m 15 "https://api.gateio.ws/api/v4/futures/usdt/order_book?contract=BTC_USDT&limit=300" | head -c 160; echo
